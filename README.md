@@ -18,6 +18,17 @@ Specialized knowledge for real estate marketing analytics, including SEM campaig
 - Geographic market analysis frameworks
 - Common analysis patterns and best practices
 
+### Skills Librarian (New!)
+A meta-skill that helps manage this skill repository. Use it to discover available skills, get installation instructions, create new skills, or update existing ones.
+
+**Triggers:** "what skills are available", "install a skill", "create new skill", "update skill"
+
+**What it includes:**
+- Skill discovery and catalog
+- Installation instructions
+- Skill creation templates
+- Repository management via GitHub
+
 ## 🚀 Quick Start
 
 ### Installation
@@ -135,12 +146,15 @@ claude-skills-marketing/
 ├── CONTRIBUTING.md                    # Contribution guidelines
 ├── CHANGELOG.md                       # Version history
 ├── skills/                            # Skill source files
-│   └── rdc-marketing-analytics/
-│       ├── SKILL.md                   # Core skill documentation
-│       └── references/                # Reference documentation
-│           ├── snowflake_schema.md    # Database schemas
-│           ├── business_logic.md      # Metrics and rules
-│           └── glossary.md            # Terms and acronyms
+│   ├── rdc-marketing-analytics/
+│   │   ├── SKILL.md                   # Core skill documentation
+│   │   └── references/                # Reference documentation
+│   │       ├── snowflake_schema.md    # Database schemas
+│   │       ├── business_logic.md      # Metrics and rules
+│   │       └── glossary.md            # Terms and acronyms
+│   └── skills-librarian/              # Meta-skill for repo management
+│       ├── SKILL.md                   # Librarian skill
+│       └── references/                # Templates and repo map
 ├── dist/                              # Compiled .skill files (install these)
 │   └── rdc-marketing-analytics-v1.1.skill
 ├── docs/                              # Team documentation
