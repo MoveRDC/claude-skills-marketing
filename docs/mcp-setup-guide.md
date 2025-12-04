@@ -10,7 +10,6 @@ MCP servers extend Claude's capabilities by connecting it to external tools. Thi
 |------------|---------|---------------|
 | **Snowflake** | Query data warehouse | Python 3.12+, Snowflake account |
 | **GitHub** | Manage repositories, PRs, issues | Node.js 18+, GitHub account |
-| **Google Ads** | Analyze ad performance | Python 3.12+, Google Ads API access |
 
 ## Quick Start: Complete Config
 
@@ -29,10 +28,6 @@ If you're setting up everything at once, here's a complete `claude_desktop_confi
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_TOKEN_HERE"
       }
-    },
-    "googleAds": {
-      "command": "/Users/YOURNAME/mcp-google-ads/.venv/bin/python",
-      "args": ["/Users/YOURNAME/mcp-google-ads/google_ads_server.py"]
     }
   }
 }
@@ -160,44 +155,6 @@ The GitHub MCP server doesn't need a separate installation - it runs via `npx`:
 
 ---
 
-## Part 3: Google Ads MCP Server
-
-### Prerequisites
-
-- Python 3.12+ installed
-- Google Ads API access
-- OAuth credentials configured
-
-### Step 1: Create Project Directory
-
-```bash
-mkdir -p ~/mcp-google-ads
-cd ~/mcp-google-ads
-```
-
-### Step 2: Create Virtual Environment
-
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-```
-
-### Step 3: Install Dependencies
-
-```bash
-pip install google-ads mcp
-```
-
-### Step 4: Configure OAuth
-
-Set up your Google Ads API credentials following Google's OAuth setup process.
-
-### Step 5: Create Server Script
-
-Create `~/mcp-google-ads/google_ads_server.py` with your Google Ads MCP server code.
-
----
-
 ## Config File Location
 
 **macOS:**
@@ -270,11 +227,6 @@ After restarting Claude Desktop, verify each server:
 "Search for repositories in the MoveRDC organization"
 ```
 
-### Google Ads
-```
-"List my Google Ads accounts"
-```
-
 ---
 
 ## Troubleshooting
@@ -318,15 +270,6 @@ cat ~/Library/"Application Support"/Claude/claude_desktop_config.json | python -
 
 **Fix:** Regenerate token at https://github.com/settings/tokens
 
-### Google Ads Issues
-
-**Symptom:** Google Ads commands fail
-
-**Check:**
-1. OAuth tokens are valid
-2. API access is enabled
-3. Account IDs are correct
-
 ---
 
 ## Adding New MCP Servers
@@ -362,13 +305,11 @@ The config file stores tokens in plain text. Protect it:
 
 Set reminders to rotate tokens before expiration:
 - GitHub: Typically 90 days
-- Google: Refresh tokens should auto-renew
 
 ### Revoking Access
 
 If a token is compromised:
 - **GitHub:** https://github.com/settings/tokens → Delete token
-- **Google:** https://myaccount.google.com/permissions → Revoke access
 
 ---
 
@@ -382,10 +323,6 @@ If a token is compromised:
       "args": [
         "/Users/gbecker/snowflake-mcp/server.py"
       ]
-    },
-    "googleAds": {
-      "command": "/Users/gbecker/mcp-google-ads/.venv/bin/python",
-      "args": ["/Users/gbecker/mcp-google-ads/google_ads_server.py"]
     },
     "github": {
       "command": "npx",
