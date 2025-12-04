@@ -1,0 +1,271 @@
+#!/bin/bash
+#
+# MCP Server Setup Script for Claude Desktop
+# Sets up GitHub MCP server (and optionally others)
+#
+# Usage: ./setup-mcp-servers.sh
+#
+
+set -e
+
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║       MCP Server Setup for Claude Desktop                  ║"
+echo "║       Marketing Analytics Team                             ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+
+# Detect OS
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    CONFIG_DIR="$HOME/Library/Application Support/Claude"
+    CONFIG_FILE="$CONFIG_DIR/claude_desktop_config.json"
+    OS="macOS"
+elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+    CONFIG_DIR="$APPDATA/Claude"
+    CONFIG_FILE="$CONFIG_DIR/claude_desktop_config.json"
+    OS="Windows"
+else
+    echo "❌ Unsupported operating system: $OSTYPE"
+    exit 1
+fi
+
+echo "📍 Detected OS: $OS"
+echo "📁 Config location: $CONFIG_FILE"
+echo ""
+
+# ============================================
+# PREREQUISITES CHECK
+# ============================================
+
+echo "🔍 Checking prerequisites..."
+echo ""
+
+# Check Node.js (required for GitHub MCP)
+if command -v node &> /dev/null; then
+    NODE_VERSION=$(node --version)
+    echo "✅ Node.js installed: $NODE_VERSION"
+else
+    echo "❌ Node.js not found"
+    echo "   Install with: brew install node (macOS) or download from https://nodejs.org"
+    exit 1
+fi
+
+# Check npx
+if command -v npx &> /dev/null; then
+    NPX_VERSION=$(npx --version)
+    echo "✅ npx installed: $NPX_VERSION"
+else
+    echo "❌ npx not found (should come with Node.js)"
+    exit 1
+fi
+
+# Check Python (for Snowflake/Google Ads MCP)
+if command -v python3 &> /dev/null; then
+    PYTHON_VERSION=$(python3 --version)
+    echo "✅ Python installed: $PYTHON_VERSION"
+else
+    echo "⚠️  Python 3 not found (optional, needed for Snowflake/Google Ads MCP)"
+fi
+
+echo ""
+
+# ============================================
+# CONFIG DIRECTORY SETUP
+# ============================================
+
+echo "📂 Setting up config directory..."
+
+if [ ! -d "$CONFIG_DIR" ]; then
+    echo "   Creating directory: $CONFIG_DIR"
+    mkdir -p "$CONFIG_DIR"
+fi
+
+echo "✅ Config directory ready"
+echo ""
+
+# ============================================
+# GITHUB TOKEN SETUP
+# ============================================
+
+echo "🔐 GitHub Personal Access Token Setup"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "You need a fine-grained personal access token from GitHub."
+echo ""
+echo "To create one:"
+echo "  1. Go to: https://github.com/settings/personal-access-tokens/new"
+echo "  2. Token name: Claude GitHub Access"
+echo "  3. Expiration: 90 days (recommended)"
+echo "  4. Resource owner: MoveRDC"
+echo "  5. Repository access: Select repos or 'All repositories'"
+echo "  6. Permissions:"
+echo "     - Contents: Read and write"
+echo "     - Metadata: Read-only (auto-selected)"
+echo "     - Pull requests: Read and write"
+echo "     - Issues: Read and write (optional)"
+echo ""
+read -p "Do you have a GitHub token ready? (y/n): " HAS_TOKEN
+
+if [[ "$HAS_TOKEN" != "y" && "$HAS_TOKEN" != "Y" ]]; then
+    echo ""
+    echo "Please create a token first, then run this script again."
+    echo "Opening GitHub token page..."
+    if [[ "$OS" == "macOS" ]]; then
+        open "https://github.com/settings/personal-access-tokens/new"
+    fi
+    exit 0
+fi
+
+echo ""
+read -sp "Paste your GitHub token (input hidden): " GITHUB_TOKEN
+echo ""
+
+if [ -z "$GITHUB_TOKEN" ]; then
+    echo "❌ No token provided"
+    exit 1
+fi
+
+echo "✅ Token received"
+echo ""
+
+# ============================================
+# CONFIG FILE GENERATION
+# ============================================
+
+echo "📝 Generating config file..."
+echo ""
+
+# Check if config file exists
+if [ -f "$CONFIG_FILE" ]; then
+    echo "⚠️  Existing config file found!"
+    echo ""
+    cat "$CONFIG_FILE"
+    echo ""
+    read -p "Overwrite with new config? (y/n): " OVERWRITE
+    if [[ "$OVERWRITE" != "y" && "$OVERWRITE" != "Y" ]]; then
+        echo ""
+        echo "To manually add GitHub MCP, add this to your mcpServers:"
+        echo ""
+        echo '    "github": {'
+        echo '      "command": "npx",'
+        echo '      "args": ["-y", "@modelcontextprotocol/server-github"],'
+        echo '      "env": {'
+        echo '        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_TOKEN_HERE"'
+        echo '      }'
+        echo '    }'
+        echo ""
+        exit 0
+    fi
+    # Backup existing config
+    cp "$CONFIG_FILE" "$CONFIG_FILE.backup.$(date +%Y%m%d%H%M%S)"
+    echo "📦 Backed up existing config"
+fi
+
+# Ask about additional MCP servers
+echo ""
+echo "Which MCP servers do you want to configure?"
+echo ""
+
+read -p "Include Snowflake MCP? (y/n): " INCLUDE_SNOWFLAKE
+read -p "Include Google Ads MCP? (y/n): " INCLUDE_GOOGLE_ADS
+
+# Build config
+echo ""
+echo "Building configuration..."
+
+CONFIG='{\n  "mcpServers": {\n'
+
+# GitHub (always included)
+CONFIG+='    "github": {\n'
+CONFIG+='      "command": "npx",\n'
+CONFIG+='      "args": ["-y", "@modelcontextprotocol/server-github"],\n'
+CONFIG+='      "env": {\n'
+CONFIG+="        \"GITHUB_PERSONAL_ACCESS_TOKEN\": \"$GITHUB_TOKEN\"\n"
+CONFIG+='      }\n'
+CONFIG+='    }'
+
+# Snowflake
+if [[ "$INCLUDE_SNOWFLAKE" == "y" || "$INCLUDE_SNOWFLAKE" == "Y" ]]; then
+    echo ""
+    read -p "Enter path to Snowflake MCP python (e.g., /Users/you/snowflake-mcp/venv/bin/python): " SNOWFLAKE_PYTHON
+    read -p "Enter path to Snowflake MCP server.py (e.g., /Users/you/snowflake-mcp/server.py): " SNOWFLAKE_SCRIPT
+    
+    CONFIG+=',\n'
+    CONFIG+='    "snowflake": {\n'
+    CONFIG+="      \"command\": \"$SNOWFLAKE_PYTHON\",\n"
+    CONFIG+="      \"args\": [\"$SNOWFLAKE_SCRIPT\"]\n"
+    CONFIG+='    }'
+fi
+
+# Google Ads
+if [[ "$INCLUDE_GOOGLE_ADS" == "y" || "$INCLUDE_GOOGLE_ADS" == "Y" ]]; then
+    echo ""
+    read -p "Enter path to Google Ads MCP python (e.g., /Users/you/mcp-google-ads/.venv/bin/python): " GADS_PYTHON
+    read -p "Enter path to Google Ads MCP server.py (e.g., /Users/you/mcp-google-ads/google_ads_server.py): " GADS_SCRIPT
+    
+    CONFIG+=',\n'
+    CONFIG+='    "googleAds": {\n'
+    CONFIG+="      \"command\": \"$GADS_PYTHON\",\n"
+    CONFIG+="      \"args\": [\"$GADS_SCRIPT\"]\n"
+    CONFIG+='    }'
+fi
+
+CONFIG+='\n  }\n}'
+
+# Write config file
+echo -e "$CONFIG" > "$CONFIG_FILE"
+
+echo ""
+echo "✅ Config file written to: $CONFIG_FILE"
+echo ""
+
+# ============================================
+# VERIFICATION
+# ============================================
+
+echo "📋 Config file contents:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━"
+cat "$CONFIG_FILE"
+echo ""
+
+# Validate JSON
+if command -v python3 &> /dev/null; then
+    if python3 -m json.tool "$CONFIG_FILE" > /dev/null 2>&1; then
+        echo "✅ JSON is valid"
+    else
+        echo "❌ JSON validation failed!"
+        exit 1
+    fi
+fi
+
+# ============================================
+# NEXT STEPS
+# ============================================
+
+echo ""
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║                     SETUP COMPLETE                         ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+echo "📋 Next Steps:"
+echo ""
+echo "  1. RESTART Claude Desktop completely"
+echo "     - macOS: Cmd+Q to quit, then reopen"
+echo "     - Windows: Right-click tray icon → Exit, then reopen"
+echo ""
+echo "  2. TEST the connection by asking Claude:"
+echo "     \"Search for repositories in the MoveRDC organization\""
+echo ""
+echo "  3. If it doesn't work:"
+echo "     - Make sure Claude Desktop fully restarted"
+echo "     - Check the token has correct permissions"
+echo "     - Review docs/github-mcp-setup.md for troubleshooting"
+echo ""
+echo "📚 Documentation:"
+echo "   - GitHub MCP: docs/github-mcp-setup.md"
+echo "   - Complete Guide: docs/mcp-setup-guide.md"
+echo ""
+echo "🔐 Security Reminder:"
+echo "   - Never share your tokens"
+echo "   - Rotate tokens every 90 days"
+echo "   - Revoke tokens at: https://github.com/settings/tokens"
+echo ""

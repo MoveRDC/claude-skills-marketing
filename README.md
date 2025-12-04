@@ -4,15 +4,17 @@ Claude AI skill packages for the RDC Marketing Analytics team. This repository c
 
 ## 📦 Available Skills
 
-### RDC Marketing Analytics v1.1
+### RDC Marketing Analytics v1.2
 Specialized knowledge for real estate marketing analytics, including SEM campaign optimization, lead generation analysis, and channel performance insights.
 
 **[Download Latest Version](dist/rdc-marketing-analytics-v1.1.skill)** ⬅️ Install this file in Claude
 
 **What it includes:**
-- SEM campaign types and terminology (DSA, Performance Max, Buy Intent)
+- Business context (two-sided marketplace model, platforms, external factors)
+- Key metrics and formulas (EFR, ROAS, RPL, CPL, LSR, and more)
+- SEM campaign types and terminology (DSA, Performance Max, VBB, Buy Intent)
 - Snowflake database schemas (RDC_ANALYTICS, RDC_MARKETING)
-- Lead metrics and calculation methods
+- Lead metrics and quality calculations
 - Geographic market analysis frameworks
 - Common analysis patterns and best practices
 
@@ -30,15 +32,62 @@ Specialized knowledge for real estate marketing analytics, including SEM campaig
 
 Try these example queries:
 ```
+"What is our North Star metric and how do we calculate ROAS?"
 "Analyze our Google Buy Intent campaigns from last month"
 "Show me which DMAs have zero leads despite having inventory"
-"Compare lead pricing across paid search vs. organic channels"
-"What tables do you know about in RDC_ANALYTICS?"
+"What external factors affect our lead volume?"
+```
+
+## 🔧 MCP Server Setup
+
+To give Claude direct access to your tools (GitHub, Snowflake, Google Ads), set up MCP servers:
+
+### Quick Setup (Recommended)
+
+Run the interactive setup script:
+```bash
+git clone https://github.com/MoveRDC/claude-skills-marketing.git
+cd claude-skills-marketing
+chmod +x scripts/setup-mcp-servers.sh
+./scripts/setup-mcp-servers.sh
+```
+
+### Manual Setup
+
+See the detailed guides:
+- **[Complete MCP Setup Guide](docs/mcp-setup-guide.md)** - All MCP servers (Snowflake, GitHub, Google Ads)
+- **[GitHub MCP Setup](docs/github-mcp-setup.md)** - GitHub-specific setup
+
+### Example Config
+
+Your `claude_desktop_config.json` should look like:
+```json
+{
+  "mcpServers": {
+    "snowflake": {
+      "command": "/path/to/snowflake-mcp/venv/bin/python",
+      "args": ["/path/to/snowflake-mcp/server.py"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_TOKEN_HERE"
+      }
+    },
+    "googleAds": {
+      "command": "/path/to/mcp-google-ads/.venv/bin/python",
+      "args": ["/path/to/mcp-google-ads/google_ads_server.py"]
+    }
+  }
+}
 ```
 
 ## 📚 Documentation
 
-- **[Installation Guide](docs/installation-guide.md)** - Detailed setup instructions
+- **[Installation Guide](docs/installation-guide.md)** - Detailed skill setup instructions
+- **[MCP Setup Guide](docs/mcp-setup-guide.md)** - Complete MCP server configuration
+- **[GitHub MCP Setup](docs/github-mcp-setup.md)** - GitHub integration setup
 - **[Update Workflow](docs/update-workflow.md)** - How to contribute and update skills
 - **[CHANGELOG](CHANGELOG.md)** - Version history and updates
 
@@ -62,15 +111,19 @@ We welcome contributions from the marketing analytics team! See **[CONTRIBUTING.
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.1** (December 2024)
+**Current Version: v1.2** (December 2025)
+- Added EFR (Expected Future Revenue) as North Star metric
+- Added ROAS, RPL, CPC, LSR metrics with formulas
+- Added business context (two-sided marketplace, platforms)
+- Added comprehensive glossary with all acronyms
+- Added external factors (seasonal, macro, competitive)
+
+**Previous: v1.1** (December 2024)
 - Initial release with core marketing analytics knowledge
-- Snowflake schema documentation (LEADS, GOOGLE_ADS_PERFORMANCE, CLICKSTREAM, PROPERTY_LISTINGS)
-- Business logic and metric definitions
-- Common analysis patterns
 
 ## 👥 Team
 
-**Skill Maintainer**: Mikael (Marketing Analytics)
+**Skill Maintainer**: Marketing Analytics Team
 
 **Contributors**: Marketing Analytics Team
 
@@ -86,12 +139,17 @@ claude-skills-marketing/
 │       ├── SKILL.md                   # Core skill documentation
 │       └── references/                # Reference documentation
 │           ├── snowflake_schema.md    # Database schemas
-│           └── business_logic.md      # Metrics and rules
+│           ├── business_logic.md      # Metrics and rules
+│           └── glossary.md            # Terms and acronyms
 ├── dist/                              # Compiled .skill files (install these)
 │   └── rdc-marketing-analytics-v1.1.skill
-└── docs/                              # Team documentation
-    ├── installation-guide.md
-    └── update-workflow.md
+├── docs/                              # Team documentation
+│   ├── installation-guide.md          # Skill installation
+│   ├── mcp-setup-guide.md             # Complete MCP setup
+│   ├── github-mcp-setup.md            # GitHub MCP setup
+│   └── update-workflow.md             # Contribution workflow
+└── scripts/                           # Setup scripts
+    └── setup-mcp-servers.sh           # Interactive MCP setup
 ```
 
 ## 🔒 Security
@@ -102,6 +160,11 @@ This repository contains internal business logic and database schemas. Access is
 - API keys or credentials
 - PII or sensitive customer data
 - Actual query results with real data
+
+**Token Security**:
+- Never share tokens in chat or email
+- Rotate tokens every 90 days
+- Use fine-grained tokens with minimum permissions
 
 ## 💡 Tips
 
@@ -117,10 +180,10 @@ This repository contains internal business logic and database schemas. Access is
 - Ask in #marketing-analytics Slack channel
 - Contact the skill maintainer
 
-**Installation problems?**
-- Verify you're using the latest .skill file from `dist/`
-- Try reinstalling
-- Check Claude Desktop/claude.ai skills settings
+**MCP Setup problems?**
+- Check the troubleshooting section in [mcp-setup-guide.md](docs/mcp-setup-guide.md)
+- Verify prerequisites (Node.js, Python)
+- Ensure Claude Desktop fully restarted after config changes
 
 ## 📈 Roadmap
 
@@ -132,6 +195,6 @@ Future enhancements:
 
 ---
 
-**Last Updated**: December 2024  
+**Last Updated**: December 2025  
 **Repository**: MoveRDC/claude-skills-marketing  
 **License**: Internal Use Only
