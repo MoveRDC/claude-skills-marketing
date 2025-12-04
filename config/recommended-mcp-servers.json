@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-12-04",
+  "mcpServers": {
+    "github": {
+      "description": "GitHub integration for repository management, PRs, and issues",
+      "required": true,
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "envRequired": ["GITHUB_PERSONAL_ACCESS_TOKEN"],
+      "setupUrl": "https://github.com/settings/personal-access-tokens/new",
+      "setupInstructions": [
+        "Token name: Claude GitHub Access",
+        "Expiration: 90 days (recommended)",
+        "Resource owner: MoveRDC",
+        "Repository access: All repositories or select specific repos",
+        "Permissions: Contents (Read/Write), Metadata (Read), Pull requests (Read/Write), Issues (Read/Write)"
+      ]
+    },
+    "snowflake": {
+      "description": "Snowflake data warehouse queries",
+      "required": false,
+      "command": "__SNOWFLAKE_PYTHON_PATH__",
+      "args": ["__SNOWFLAKE_SCRIPT_PATH__"],
+      "userConfigRequired": ["command", "args[0]"],
+      "setupInstructions": [
+        "Requires separate Snowflake MCP server setup",
+        "See docs/mcp-setup-guide.md for details"
+      ]
+    }
+  }
+}
