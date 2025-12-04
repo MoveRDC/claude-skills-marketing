@@ -58,6 +58,13 @@ else
     exit 1
 fi
 
+# Check curl (for GitHub API validation)
+if command -v curl &> /dev/null; then
+    echo "✅ curl installed"
+else
+    echo "⚠️  curl not found (token validation will be skipped)"
+fi
+
 # Check Python (for Snowflake MCP)
 if command -v python3 &> /dev/null; then
     PYTHON_VERSION=$(python3 --version)
@@ -124,7 +131,99 @@ if [ -z "$GITHUB_TOKEN" ]; then
     exit 1
 fi
 
-echo "✅ Token received"
+# ============================================
+# TOKEN VALIDATION
+# ============================================
+
+echo ""
+echo "🔍 Validating GitHub token..."
+
+# Check token format
+if [[ "$GITHUB_TOKEN" == ghp_* ]] || [[ "$GITHUB_TOKEN" == github_pat_* ]]; then
+    echo "✅ Token format looks correct"
+else
+    echo "⚠️  Token format is unusual (expected ghp_* or github_pat_*)"
+    echo "   This may still work if it's a valid token."
+    read -p "   Continue anyway? (y/n): " CONTINUE_ANYWAY
+    if [[ "$CONTINUE_ANYWAY" != "y" && "$CONTINUE_ANYWAY" != "Y" ]]; then
+        exit 1
+    fi
+fi
+
+# Test token against GitHub API
+if command -v curl &> /dev/null; then
+    echo "   Testing token against GitHub API..."
+    
+    HTTP_STATUS=$(curl -s -o /tmp/github_response.json -w "%{http_code}" \
+        -H "Authorization: Bearer $GITHUB_TOKEN" \
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        "https://api.github.com/user")
+    
+    if [ "$HTTP_STATUS" == "200" ]; then
+        GITHUB_USER=$(cat /tmp/github_response.json | grep -o '"login":"[^"]*"' | head -1 | cut -d'"' -f4)
+        echo "✅ Token is valid! Authenticated as: $GITHUB_USER"
+        rm -f /tmp/github_response.json
+    elif [ "$HTTP_STATUS" == "401" ]; then
+        echo "❌ Token is invalid or expired (HTTP 401)"
+        echo "   Please generate a new token and try again."
+        rm -f /tmp/github_response.json
+        exit 1
+    elif [ "$HTTP_STATUS" == "403" ]; then
+        echo "❌ Token lacks required permissions (HTTP 403)"
+        echo "   Please check the token has the correct scopes."
+        rm -f /tmp/github_response.json
+        exit 1
+    else
+        echo "⚠️  Could not verify token (HTTP $HTTP_STATUS)"
+        echo "   Continuing anyway - the token may still work."
+        rm -f /tmp/github_response.json
+    fi
+    
+    # Test access to MoveRDC organization
+    echo "   Checking access to MoveRDC organization..."
+    
+    ORG_STATUS=$(curl -s -o /tmp/github_org.json -w "%{http_code}" \
+        -H "Authorization: Bearer $GITHUB_TOKEN" \
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        "https://api.github.com/orgs/MoveRDC")
+    
+    if [ "$ORG_STATUS" == "200" ]; then
+        echo "✅ Access to MoveRDC organization confirmed"
+        rm -f /tmp/github_org.json
+    else
+        echo "⚠️  Could not verify MoveRDC access (HTTP $ORG_STATUS)"
+        echo "   Make sure the token's resource owner is set to MoveRDC"
+        rm -f /tmp/github_org.json
+    fi
+else
+    echo "⚠️  Skipping API validation (curl not available)"
+fi
+
+echo ""
+
+# ============================================
+# PRE-DOWNLOAD GITHUB MCP PACKAGE
+# ============================================
+
+echo "📦 Pre-downloading GitHub MCP package..."
+echo "   This may take a moment on first run..."
+
+# Run npx to cache the package (suppress output unless there's an error)
+if npx -y @modelcontextprotocol/server-github --help > /dev/null 2>&1; then
+    echo "✅ GitHub MCP package is ready"
+else
+    # The package might not have a --help flag, so check if it downloaded
+    if npm list -g @modelcontextprotocol/server-github > /dev/null 2>&1 || \
+       [ -d "$HOME/.npm/_npx" ]; then
+        echo "✅ GitHub MCP package cached"
+    else
+        echo "⚠️  Could not verify package download"
+        echo "   Claude Desktop will download it on first use."
+    fi
+fi
+
 echo ""
 
 # ============================================
@@ -187,6 +286,14 @@ if [[ "$INCLUDE_SNOWFLAKE" == "y" || "$INCLUDE_SNOWFLAKE" == "Y" ]]; then
     echo ""
     read -p "Enter path to Snowflake MCP python (e.g., /Users/you/snowflake-mcp/venv/bin/python): " SNOWFLAKE_PYTHON
     read -p "Enter path to Snowflake MCP server.py (e.g., /Users/you/snowflake-mcp/server.py): " SNOWFLAKE_SCRIPT
+    
+    # Validate paths exist
+    if [ ! -f "$SNOWFLAKE_PYTHON" ]; then
+        echo "⚠️  Warning: Python path does not exist: $SNOWFLAKE_PYTHON"
+    fi
+    if [ ! -f "$SNOWFLAKE_SCRIPT" ]; then
+        echo "⚠️  Warning: Server script does not exist: $SNOWFLAKE_SCRIPT"
+    fi
     
     CONFIG+=',\n'
     CONFIG+='    "snowflake": {\n'
