@@ -4,6 +4,19 @@ All notable changes to the Marketing Analytics Claude Skills will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v1.3] - 2025-12-04
+
+### Added
+
+**New Skill: skills-librarian**
+- Meta-skill for managing the skill repository
+- Discover and catalog available skills
+- Provide installation instructions with minimal user input
+- Create new skills using templates
+- Update existing skill content via GitHub
+- Repository structure documentation
+- Skill creation templates and guidelines
+
 ## [v1.2] - 2025-12-03
 
 ### Added
@@ -62,5 +75,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| v1.3 | 2025-12-04 | Added skills-librarian meta-skill for repo management |
 | v1.2 | 2025-12-03 | Added EFR, ROAS, business context, glossary, platform definitions |
 | v1.1 | 2024-12-01 | Initial release with core analytics knowledge |
