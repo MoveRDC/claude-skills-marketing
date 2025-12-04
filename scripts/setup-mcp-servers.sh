@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # MCP Server Setup Script for Claude Desktop
-# Sets up GitHub MCP server (and optionally others)
+# Sets up GitHub MCP server (and optionally Snowflake)
 #
 # Usage: ./setup-mcp-servers.sh
 #
@@ -58,12 +58,12 @@ else
     exit 1
 fi
 
-# Check Python (for Snowflake/Google Ads MCP)
+# Check Python (for Snowflake MCP)
 if command -v python3 &> /dev/null; then
     PYTHON_VERSION=$(python3 --version)
     echo "✅ Python installed: $PYTHON_VERSION"
 else
-    echo "⚠️  Python 3 not found (optional, needed for Snowflake/Google Ads MCP)"
+    echo "⚠️  Python 3 not found (optional, needed for Snowflake MCP)"
 fi
 
 echo ""
@@ -166,7 +166,6 @@ echo "Which MCP servers do you want to configure?"
 echo ""
 
 read -p "Include Snowflake MCP? (y/n): " INCLUDE_SNOWFLAKE
-read -p "Include Google Ads MCP? (y/n): " INCLUDE_GOOGLE_ADS
 
 # Build config
 echo ""
@@ -193,19 +192,6 @@ if [[ "$INCLUDE_SNOWFLAKE" == "y" || "$INCLUDE_SNOWFLAKE" == "Y" ]]; then
     CONFIG+='    "snowflake": {\n'
     CONFIG+="      \"command\": \"$SNOWFLAKE_PYTHON\",\n"
     CONFIG+="      \"args\": [\"$SNOWFLAKE_SCRIPT\"]\n"
-    CONFIG+='    }'
-fi
-
-# Google Ads
-if [[ "$INCLUDE_GOOGLE_ADS" == "y" || "$INCLUDE_GOOGLE_ADS" == "Y" ]]; then
-    echo ""
-    read -p "Enter path to Google Ads MCP python (e.g., /Users/you/mcp-google-ads/.venv/bin/python): " GADS_PYTHON
-    read -p "Enter path to Google Ads MCP server.py (e.g., /Users/you/mcp-google-ads/google_ads_server.py): " GADS_SCRIPT
-    
-    CONFIG+=',\n'
-    CONFIG+='    "googleAds": {\n'
-    CONFIG+="      \"command\": \"$GADS_PYTHON\",\n"
-    CONFIG+="      \"args\": [\"$GADS_SCRIPT\"]\n"
     CONFIG+='    }'
 fi
 
