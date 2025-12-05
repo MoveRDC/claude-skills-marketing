@@ -13,6 +13,29 @@ Standard business rules, metric calculations, and data quality guidelines for re
 - Primary measure of lead value and campaign effectiveness
 - Reflects success-based revenue model (referral fees on closed deals)
 
+**Calculation Methodology by Business Model:**
+
+The calculation varies depending on the product type:
+
+**Subscription Products** (Connections Plus, MVIP Leads, Listing Tool Kit):
+```
+EFR = Total Contract Value / Promised or Estimated Lead Volume
+```
+- Fixed per-lead value within contract period
+- Example: $12,000 annual subscription ÷ 50 leads = $240 EFR per lead
+
+**Referral Models** (Standard agent referrals):
+```
+EFR = Predicted Home Close Value × Predicted Close Rate (PCR) × Commission %
+```
+- Variable based on market conditions and conversion probability
+- Example: $500,000 home × 2.5% close rate × 25% commission = $3,125 EFR
+
+**Important Limitations:**
+- EFR is an operational tool, NOT an accounting metric
+- Does not account for incrementality
+- Not suitable for financial reporting or in-period revenue recognition
+
 ### ROAS (Return on Ad Spend)
 
 **Definition:** Key performance indicator measuring profitability of advertising campaigns.
@@ -100,6 +123,27 @@ ORDER BY cpl ASC;
 CPC = SUM(Spend) / SUM(Clicks)
 ```
 
+**Typical Range:** $0.50 - $5.00 (varies by channel)
+
+### CTR (Click-Through Rate)
+
+**Definition:** The percentage of ad impressions that result in clicks, measuring ad creative effectiveness.
+
+**Formula:**
+```sql
+CTR = SUM(Clicks) / NULLIF(SUM(Impressions), 0)
+```
+
+**Interpretation:**
+- Result is a decimal (0.02 = 2%)
+- Typical range: 1% - 5% (varies significantly by channel and creative)
+
+**Usage:**
+- Measure ad creative effectiveness
+- Compare ad copy and visual appeal
+- Optimize targeting and audience selection
+- Benchmark against industry standards
+
 ## Conversion Metrics
 
 ### LSR (Lead Submission Rate)
@@ -145,6 +189,29 @@ COUNT(DISTINCT CASE WHEN reached_pdp THEN session_id END)::FLOAT
 COUNT(DISTINCT CASE WHEN submitted_lead THEN session_id END)::FLOAT 
 / NULLIF(COUNT(DISTINCT CASE WHEN reached_pdp THEN session_id END), 0) AS pdp_to_lead_rate
 ```
+
+### Metric Relationships
+
+Understanding how metrics connect helps optimize performance:
+
+**Efficiency Chain:**
+```
+ROAS = Revenue / Spend
+     = (Revenue / Leads) × (Leads / Clicks) × (Clicks / Spend)
+     = RPL × LSR × (1 / CPC)
+```
+
+This shows that improving any of RPL, LSR, or CPC will improve overall ROAS.
+
+**Conversion Funnel:**
+```
+Impressions → (CTR) → Clicks → (LSR) → Leads → (RPL) → Revenue
+```
+
+**Key Relationships:**
+- `ROAS = RPL × LSR × CPC Efficiency`
+- `ROAS = RPL × LSR / CPC`
+- `CPL = CPC / LSR`
 
 ## Lead Quality Metrics
 
@@ -326,6 +393,105 @@ ORDER BY active_listings DESC;
 2. Review competitive landscape
 3. Assess if targeting parameters exclude market
 4. Evaluate market opportunity vs. investment
+
+## Categorization Standards
+
+### Marketing Channel Categorization
+
+**Definition:** Last-touch marketing channel represents the marketing source that gets credit for driving user activity.
+
+**Standard Values:**
+1. `'paid_search'` - Search engine ads (Google Ads, Bing Ads)
+2. `'organic_search'` - Unpaid search engine results
+3. `'direct'` - Direct traffic (URL typed, bookmarks)
+4. `'display_paid_social'` - Display ads and paid social media
+5. `'organic_social'` - Unpaid social media traffic
+6. `'email'` - Email marketing campaigns
+7. `'digital_brand'` - Brand/partnership campaigns
+8. `'notifications'` - Push notifications and in-app messages
+9. `'other'` - Catch-all for unclassified channels
+
+**Attribution Model:** Last-touch attribution (most recent touchpoint gets 100% credit)
+
+**Channel Groups:**
+
+**Performance Channels** (paid marketing with direct ROI measurement):
+- paid_search, display_paid_social, digital_brand
+
+**Acquisition Channels** (all user acquisition, paid + organic):
+- paid_search, display_paid_social, digital_brand, organic_search, organic_social
+
+**NULL Handling:** Always use `COALESCE(channel, 'other')` to preserve all data
+
+### Vertical Categorization
+
+**Definition:** Major product/content area representing business lines.
+
+**Standard Values:**
+1. `'for_sale'` - Home buying/purchasing (primary revenue driver)
+2. `'for_rent'` - Rental properties (primary revenue driver)
+3. `'sell'` / `'Seller'` - Home selling (different product offering)
+4. `'news_insights'` - News & information content
+5. `'recently_sold'` - Recently sold properties research
+6. `'not_for_sale'` - Properties not currently on market
+7. `'new_homes'` - New construction homes
+8. `'Finance'` - Mortgage/financing content
+9. `'other'` - Catch-all for unmapped verticals
+
+**Critical Context:** Most reports filter to `WHERE vertical IN ('for_sale', 'for_rent')` to focus on core revenue-generating verticals.
+
+**Typical EFR Ranges by Vertical:**
+- For sale (buyer leads): $500 - $2,000
+- Rental: $50 - $200
+- Seller: $1,000 - $5,000
+
+### Page Type Categorization
+
+**Definition:** Specific page template or category in the user journey.
+
+**Standard Values:**
+1. `'srp'` - Search Results Page (listing search results)
+2. `'ldp'` - Listing Detail Page (individual property details, also called 'pdp')
+3. `'home'` - Homepage
+4. `'article'` - News & information articles
+5. `'mortgage'` - Mortgage/finance related pages
+6. `'others'` - All other page types (catch-all)
+
+**Critical Context:**
+- SRP and LDP are highest-intent pages where most conversions occur
+- Most lead conversions happen on LDP (property detail pages)
+- Homepage is often entry point but lower conversion rate
+
+**Conversion Benchmarks:**
+- SRP → PDP conversion: 15-25%
+- PDP → Lead conversion: 3-8%
+- Overall session → Lead: 0.5-2%
+
+### Platform Categorization
+
+**Definition:** Device/application type through which users interact with the product.
+
+**Standard Values:**
+1. `'desktop'` - Desktop/laptop web browsers (includes tablets)
+2. `'mobile_web'` - Mobile web browser
+3. `'android app'` - Android mobile application
+4. `'ios app'` - iOS mobile application
+5. `'unknown'` - Unable to determine platform
+
+**Consolidated Value (Exception):**
+- `'native app'` - Consolidation of 'android app' + 'ios app' used in specific tables (e.g., marketing_conversion_summary) where upstream data sources cannot split native app by OS
+
+**Typical Distribution:**
+- Desktop: ~58% of revenue (remains dominant conversion platform)
+- Mobile Web: ~37% of revenue (significant opportunity)
+- Native App (iOS + Android combined): ~3% of revenue (room for growth)
+- Unknown: ~2% (data quality monitoring)
+
+**Business Context:**
+- Desktop still drives majority of conversions despite mobile traffic growth
+- Mobile web represents major revenue stream requiring optimization
+- Platform-specific strategies needed due to different conversion behaviors
+- Most tables preserve iOS/Android split; consolidation to 'native app' occurs only when joining with lender data
 
 ## Data Quality Rules
 

@@ -80,6 +80,7 @@ When a marketing analytics task is requested:
 | RPL | EFR / Leads | Lead value |
 | CPL | Spend / Leads | Acquisition efficiency |
 | CPC | Spend / Clicks | Traffic cost |
+| CTR | Clicks / Impressions | Ad creative effectiveness |
 | LSR | Leads / Clicks | Click-to-lead conversion |
 
 **Quality Metrics:**
@@ -116,10 +117,24 @@ For complete glossary of terms and acronyms, see [references/glossary.md](refere
 - **Market Alignment** - Comparing lead acquisition patterns with listing inventory
 
 ### Channel Attribution
-- **Paid Search** - Google Ads, Bing Ads, etc.
-- **Organic Search** - Unpaid search traffic
+
+**Standard Channels** (Last-Touch Attribution):
+- **Paid Search** - Google Ads, Bing Ads
+- **Organic Search** - Unpaid search traffic  
 - **Direct** - Direct URL entry or bookmarked traffic
+- **Display/Paid Social** - Display ads and paid social media
+- **Organic Social** - Unpaid social media traffic
+- **Email** - Email marketing campaigns
+- **Digital Brand** - Brand partnerships
+- **Notifications** - Push notifications and in-app messages
 - **Referral** - Traffic from other websites
+- **Other** - Unclassified channels
+
+**Channel Groups:**
+- **Performance Channels**: paid_search, display_paid_social, digital_brand (paid media with direct ROI)
+- **Acquisition Channels**: Performance + organic_search, organic_social (all new user acquisition)
+
+See [references/business_logic.md](references/business_logic.md) for complete categorization standards.
 
 ## Database Resources
 
@@ -127,11 +142,11 @@ For detailed schema information, table relationships, and query patterns:
 
 - **See [references/snowflake_schema.md](references/snowflake_schema.md)** - Comprehensive database schema documentation
   - When to load: Any query involving Snowflake tables, joins, or data exploration
-  - Contains: Table structures, key relationships, common query patterns
+  - Contains: Revenue tables (marketing_conversion_detail_v2, media_revenue_ltmc), campaign tables (SEM, paid social, app), clickstream data, table structures, key relationships, common query patterns
 
 - **See [references/business_logic.md](references/business_logic.md)** - Business rules and metric definitions
   - When to load: Calculating KPIs, understanding metric definitions, applying business rules
-  - Contains: Metric formulas, data quality rules, aggregation methods
+  - Contains: Metric formulas (including EFR business models), categorization standards (channels, verticals, page types, platforms), data quality rules, aggregation methods
 
 - **See [references/glossary.md](references/glossary.md)** - Comprehensive terminology reference
   - When to load: Understanding acronyms, platform names, or business model context
@@ -200,7 +215,7 @@ Approach:
 ```
 Goal: Track user journey from discovery to lead
 Approach:
-1. Query clickstream data (RDC_ANALYTICS.CLICKSTREAM)
+1. Query clickstream data (RDC_ANALYTICS.CLICKSTREAM.CLICKSTREAM_DETAIL)
 2. Track sessions from SRP to lead submission
 3. Identify drop-off points
 4. Calculate conversion rates by step (LSR)

@@ -11,6 +11,111 @@ Comprehensive documentation of key Snowflake tables used in real estate marketin
 
 ### Lead & Conversion Data
 
+#### RDC_ANALYTICS.REVENUE.MARKETING_CONVERSION_DETAIL_V2
+Core fact table tracking lead submissions with estimated future revenue (EFR) and marketing attribution.
+
+**Key Fields:**
+- `EVENT_DATE` - Date of lead submission event
+- `SUBMITTED_LEAD_ID` - Unique identifier for the submitted lead
+- `LAST_TOUCH_MARKETING_CHANNEL` - Marketing channel attributed to lead (last-touch)
+- `PLATFORM` - Platform where lead originated (Android App, iOS App, Mobile Web, Desktop, Not-Mapped)
+- `SUBMITTED_LEAD_VERTICAL` - Vertical category ('for_sale', 'for_rent', 'Seller')
+- `ESTIMATED_FUTURE_REVENUE` - Total estimated future revenue for the lead
+- `TOTAL_BUY_ESTIMATED_FUTURE_REVENUE` - EFR attributed to for_sale vertical
+- `TOTAL_RENT_ESTIMATED_FUTURE_REVENUE` - EFR attributed to for_rent vertical
+- `TOTAL_SELL_ESTIMATED_FUTURE_REVENUE` - EFR attributed to seller vertical
+- `DELIVERED_TO_UPNEST_FLAG` - Indicates if lead delivered to UpNest (seller partner)
+
+**Common Uses:**
+- Lead attribution analysis by channel
+- Revenue forecasting and EFR analysis
+- Vertical performance comparison (for_sale vs for_rent vs seller)
+- Platform analysis (desktop vs mobile vs app)
+- ROAS calculations using EFR
+
+**Important Notes:**
+- One row per submitted lead (daily grain)
+- NULL channel values should be treated as 'other'
+- Platform values need standardization (use CASE statement)
+- Seller leads identified by: `submitted_lead_vertical = 'Seller' OR DELIVERED_TO_UPNEST_FLAG = 1`
+- This table shows ALL paid search revenue; sem_summary shows lower due to stricter filtering
+
+**Example Query:**
+```sql
+SELECT 
+    EVENT_DATE,
+    COALESCE(LAST_TOUCH_MARKETING_CHANNEL, 'other') AS channel,
+    SUBMITTED_LEAD_VERTICAL AS vertical,
+    COUNT(DISTINCT SUBMITTED_LEAD_ID) AS lead_count,
+    SUM(ESTIMATED_FUTURE_REVENUE) AS total_efr,
+    SUM(TOTAL_BUY_ESTIMATED_FUTURE_REVENUE) AS for_sale_efr,
+    SUM(TOTAL_RENT_ESTIMATED_FUTURE_REVENUE) AS rental_efr,
+    SUM(TOTAL_SELL_ESTIMATED_FUTURE_REVENUE) AS seller_efr
+FROM RDC_ANALYTICS.REVENUE.MARKETING_CONVERSION_DETAIL_V2
+WHERE EVENT_DATE >= DATEADD('day', -30, CURRENT_DATE())
+GROUP BY 1, 2, 3
+ORDER BY EVENT_DATE DESC, total_efr DESC;
+```
+
+---
+
+#### RDC_ANALYTICS.REVENUE.MEDIA_REVENUE_LTMC
+Allocates media revenue to marketing channels based on clickstream traffic patterns.
+
+**Purpose:** Distributes media revenue (prequal and non-prequal) to channels using page visit ratios from clickstream. Critical for accurate channel-level revenue attribution.
+
+**Key Fields:**
+- `EVENT_DATE` - Date of media revenue
+- `PLATFORM` - Platform where revenue generated (ios, android, mobile_web, desktop, unknown)
+- `VERTICAL` - Vertical where revenue generated (for_sale, for_rent, news_insights, etc.)
+- `PAGE_TYPE` - Page type where revenue generated (article, home, ldp, srp, others)
+- `PREQUAL_FLAG` - Indicates if revenue is prequal (0 = non-prequal, 1 = prequal)
+- `LAST_TOUCH_MARKETING_CHANNEL` - Channel attributed via clickstream ratios
+- `MEDIA_REVENUE` - Revenue amount allocated to this dimension combination
+
+**Allocation Logic:**
+```
+media_revenue = base_revenue × channel_ratio
+
+WHERE:
+  base_revenue = source revenue from media systems
+  channel_ratio = (channel_visits / total_visits) for that date/platform/vertical/page
+  
+IF no clickstream match:
+  channel_ratio = 1 (all revenue assigned)
+  channel = 'other'
+```
+
+**Common Uses:**
+- Channel ROI analysis with media revenue
+- Platform/vertical performance tracking
+- Media revenue forecasting
+- Cross-channel revenue attribution
+
+**Important Notes:**
+- LEFT JOIN design ensures zero revenue loss
+- Unmatched records assigned to 'other' channel
+- Revenue follows traffic patterns assumption
+- Daily refresh from upstream media systems
+
+**Example Query:**
+```sql
+SELECT 
+    EVENT_DATE,
+    LAST_TOUCH_MARKETING_CHANNEL AS channel,
+    PLATFORM,
+    VERTICAL,
+    SUM(MEDIA_REVENUE) AS total_media_revenue,
+    SUM(CASE WHEN PREQUAL_FLAG = 1 THEN MEDIA_REVENUE ELSE 0 END) AS prequal_revenue,
+    SUM(CASE WHEN PREQUAL_FLAG = 0 THEN MEDIA_REVENUE ELSE 0 END) AS non_prequal_revenue
+FROM RDC_ANALYTICS.REVENUE.MEDIA_REVENUE_LTMC
+WHERE EVENT_DATE >= DATEADD('day', -30, CURRENT_DATE())
+GROUP BY 1, 2, 3, 4
+ORDER BY EVENT_DATE DESC, total_media_revenue DESC;
+```
+
+---
+
 #### RDC_ANALYTICS.LEADS
 Primary table for lead information.
 
@@ -335,49 +440,80 @@ ORDER BY install_date DESC;
 
 ### Clickstream & Session Data
 
-#### RDC_ANALYTICS.CLICKSTREAM
-User behavior and session tracking.
+#### RDC_ANALYTICS.CLICKSTREAM.CLICKSTREAM_DETAIL
+User behavior and session tracking with detailed page-level events.
 
 **Key Fields:**
+- `EVENT_DATE` - Date of the clickstream event
 - `SESSION_ID` - Unique session identifier
 - `USER_ID` - User identifier (if authenticated)
 - `TIMESTAMP` - Event timestamp
-- `PAGE_TYPE` - Type of page (SRP, PDP, etc.)
+- `PAGE_TYPE_GROUP` - Standardized page type (article, home, ldp, mortgage, srp, others)
+- `SITE_SECTION` - Vertical/section of the site (for_sale, for_rent, sold, off_market, rentals, etc.)
 - `EVENT_TYPE` - User action (pageview, click, form_submit)
 - `PROPERTY_ID` - Property viewed/interacted with
 - `REFERRER_SOURCE` - Traffic source
+- `LAST_TOUCH_MARKETING_CHANNEL` - Marketing channel attribution (last-touch)
+- `EXPERIENCE` - Platform experience (contains iOS App, Android App identifiers)
+- `EXPERIENCE_TYPE` - Platform type (Mobile Web, Web)
 
 **Page Types:**
-- `SRP` - Search Results Page
-- `PDP` - Property Detail Page
-- `LEAD_FORM` - Lead submission page
-- `HOMEPAGE` - Homepage
+- `srp` - Search Results Page
+- `ldp` - Listing Detail Page (also called PDP - Property Detail Page)
+- `home` - Homepage
+- `article` - News & information articles
+- `mortgage` - Mortgage/finance pages
+- `others` - All other page types
 
 **Common Uses:**
-- User journey analysis
-- Conversion funnel tracking
-- Drop-off identification
-- Session attribution
+- User journey analysis and conversion funnel tracking
+- Drop-off identification in conversion path
+- Session attribution to marketing channels
+- Channel visit ratio calculations for revenue allocation
+- Platform and page type performance analysis
 
-**Example Query:**
+**Important Notes:**
+- Used as the source for channel attribution in media revenue allocation
+- Visit counts by channel determine revenue distribution ratios
+- Page type and vertical values need standardization (see Categorization Standards)
+- Platform derived from experience fields (iOS App, Android App patterns)
+
+**Example Query - Conversion Funnel:**
 ```sql
 WITH session_stages AS (
     SELECT 
         SESSION_ID,
-        MIN(CASE WHEN PAGE_TYPE = 'SRP' THEN TIMESTAMP END) AS srp_time,
-        MIN(CASE WHEN PAGE_TYPE = 'PDP' THEN TIMESTAMP END) AS pdp_time,
-        MIN(CASE WHEN PAGE_TYPE = 'LEAD_FORM' THEN TIMESTAMP END) AS lead_time
-    FROM RDC_ANALYTICS.CLICKSTREAM
-    WHERE TIMESTAMP >= DATEADD('day', -7, CURRENT_DATE())
+        MIN(CASE WHEN PAGE_TYPE_GROUP = 'srp' THEN TIMESTAMP END) AS srp_time,
+        MIN(CASE WHEN PAGE_TYPE_GROUP = 'ldp' THEN TIMESTAMP END) AS ldp_time,
+        MIN(CASE WHEN PAGE_TYPE_GROUP = 'lead_form' THEN TIMESTAMP END) AS lead_time
+    FROM RDC_ANALYTICS.CLICKSTREAM.CLICKSTREAM_DETAIL
+    WHERE EVENT_DATE >= DATEADD('day', -7, CURRENT_DATE())
     GROUP BY SESSION_ID
 )
 SELECT 
     COUNT(*) AS total_sessions,
-    COUNT(pdp_time) AS reached_pdp,
+    COUNT(ldp_time) AS reached_ldp,
     COUNT(lead_time) AS submitted_lead,
-    COUNT(lead_time)::FLOAT / NULLIF(COUNT(*), 0) AS conversion_rate
+    COUNT(ldp_time)::FLOAT / NULLIF(COUNT(*), 0) AS srp_to_ldp_rate,
+    COUNT(lead_time)::FLOAT / NULLIF(COUNT(*), 0) AS overall_conversion_rate
 FROM session_stages
 WHERE srp_time IS NOT NULL;
+```
+
+**Example Query - Channel Visit Ratios (Used for Media Revenue Allocation):**
+```sql
+SELECT 
+    EVENT_DATE,
+    PAGE_TYPE_GROUP,
+    SITE_SECTION AS vertical,
+    LAST_TOUCH_MARKETING_CHANNEL,
+    COUNT(*) AS visit_count,
+    COUNT(*)::FLOAT / SUM(COUNT(*)) OVER (PARTITION BY EVENT_DATE, PAGE_TYPE_GROUP, SITE_SECTION) AS channel_ratio
+FROM RDC_ANALYTICS.CLICKSTREAM.CLICKSTREAM_DETAIL
+WHERE EVENT_DATE >= DATEADD('day', -30, CURRENT_DATE())
+    AND PAGE_TYPE_GROUP IS NOT NULL
+GROUP BY 1, 2, 3, 4
+ORDER BY EVENT_DATE DESC, visit_count DESC;
 ```
 
 ### Listing Inventory Data
