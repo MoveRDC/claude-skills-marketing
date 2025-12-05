@@ -1,0 +1,81 @@
+# Knowledge Sources Registry
+# Points to where domain knowledge lives for discovery and reference
+
+version: "1.0"
+lastUpdated: "2025-12-05"
+
+sources:
+  # Internal documentation
+  move-confluence:
+    type: documentation
+    description: Internal Move Inc knowledge base
+    access: internal
+    url: null  # Internal only
+    domains:
+      - marketing-analytics
+      - data-engineering
+      - snowflake-schemas
+    related_skills:
+      - rdc-marketing-analytics
+
+  # Snowflake documentation
+  snowflake-docs:
+    type: reference
+    description: Snowflake official documentation
+    access: public
+    url: https://docs.snowflake.com
+    useful_for:
+      - SQL syntax and functions
+      - Performance optimization
+      - Data types and casting
+    related_skills:
+      - rdc-marketing-analytics
+      - data-quality-validation
+
+  # Google Ads API
+  google-ads-api:
+    type: api-docs
+    description: Google Ads API reference
+    access: public
+    url: https://developers.google.com/google-ads/api/docs
+    useful_for:
+      - Campaign management
+      - Reporting metrics
+      - Conversion tracking setup
+    related_skills:
+      - rdc-marketing-analytics
+
+  # Hightouch documentation
+  hightouch-docs:
+    type: integration
+    description: Hightouch reverse ETL documentation
+    access: public
+    url: https://hightouch.com/docs
+    useful_for:
+      - Sync configuration
+      - Audience building
+      - Conversion uploads
+    related_skills:
+      - rdc-marketing-analytics
+
+# Schema knowledge embedded in skills
+schema_references:
+  rdc-marketing-analytics:
+    - path: references/schema.md
+      contains: Snowflake table definitions, key columns, relationships
+    - path: references/metrics.md
+      contains: Metric definitions, calculations, business rules
+
+# Discovery patterns - when user asks X, point to Y
+discovery_hints:
+  - patterns: ["what tables", "schema", "columns", "data dictionary"]
+    point_to: rdc-marketing-analytics/references/schema.md
+    
+  - patterns: ["how is X calculated", "metric definition", "formula"]
+    point_to: rdc-marketing-analytics/references/metrics.md
+    
+  - patterns: ["SQL help", "query syntax", "Snowflake function"]
+    point_to: snowflake-docs
+    
+  - patterns: ["Google Ads API", "campaign API", "conversion upload"]
+    point_to: google-ads-api

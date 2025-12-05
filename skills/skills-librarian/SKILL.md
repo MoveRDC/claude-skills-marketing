@@ -1,113 +1,168 @@
 ---
 name: skills-librarian
-description: Manages the MoveRDC/claude-skills-marketing skill repository. Use when users need to discover, install, update, or create skills. Triggers include queries about available skills, installing skills, creating new skills, updating skill content, finding skills for specific use cases, or managing the skill repository. Also use when users mention "skill library", "skill catalog", "install a skill", "add a new skill", or "update skill".
+version: "2.0.0"
+description: |
+  Orchestrates the MoveRDC/claude-skills-marketing skill toolkit. Use for: discovering skills, 
+  understanding skill relationships, finding knowledge sources, checking versions, installing skills, 
+  or creating new skills. Triggers: "skill library", "what skills", "install skill", "skill relationships", 
+  "what works with", "check updates", "find documentation", "knowledge sources".
 ---
 
 # Skills Librarian
 
-Manages the MoveRDC/claude-skills-marketing skill repository on GitHub.
+Orchestrates the skill toolkit: discovery, relationships, knowledge, and lifecycle.
 
 ## Repository Structure
 
 ```
 MoveRDC/claude-skills-marketing/
-├── skills/                 # Source skill folders
-│   └── {skill-name}/
-│       ├── SKILL.md        # Main skill file
-│       └── references/     # Supporting docs
-├── dist/                   # Packaged .skill files (installable)
-├── docs/                   # User documentation
-├── scripts/                # Setup scripts
-└── config/                 # Configuration files
+├── skills/                 # Skill source folders
+├── registry/               # Central registry (NEW)
+│   ├── skill-graph.yaml    # Skill relationships
+│   ├── knowledge-sources.yaml  # External knowledge pointers
+│   └── versions.yaml       # Version tracking
+├── dist/                   # Packaged .skill files
+├── docs/                   # Documentation
+└── config/                 # Configuration
 ```
 
 ## Core Capabilities
 
 ### 1. Discover Skills
 
-When user asks about available skills or needs help finding one:
+List available skills with descriptions and triggers.
 
-1. Use `github:get_file_contents` to list `/skills` directory
-2. For each skill folder, read its `SKILL.md` frontmatter to get name/description
-3. Present a concise catalog with trigger keywords
+**Workflow:**
+1. Fetch `skills/` directory listing
+2. Read each skill's SKILL.md frontmatter
+3. Present concise catalog
 
-**Example response format:**
+**Response format:**
 ```
 Available skills:
 
 • rdc-marketing-analytics - SEM campaigns, lead analysis, Snowflake queries
-  Triggers: campaign performance, lead quality, ROAS, CPL, Google Ads
+• data-quality-validation - Data validation and schema checking  
+• taxonomy-updater - Taxonomy and content classification
+• skills-librarian - This skill; manages the toolkit
 ```
 
-### 2. Install Skills
+### 2. Map Skill Relationships
 
-When user wants to install a skill, provide these steps:
+**Trigger:** "what works with X" / "skill relationships" / "what complements"
 
-**For claude.ai or Claude Desktop:**
+**Workflow:**
+1. Fetch `registry/skill-graph.yaml`
+2. Find relationships for requested skill
+3. Present connections and bundles
+
+**Response format:**
 ```
-1. Download: https://github.com/MoveRDC/claude-skills-marketing/raw/main/dist/{skill-name}-{version}.skill
-2. In Claude: Settings → Skills → Upload/Install
-3. Verify: Ask "What skills do you have?"
+rdc-marketing-analytics relationships:
+
+Works well with:
+• data-quality-validation → Run validation before analytics queries
+• taxonomy-updater → Align taxonomy with analytics dimensions
+
+Recommended bundle: marketing-data-pipeline
+  Workflow: Validate data → Run analytics
+  Use when: Starting new analysis or debugging data issues
 ```
 
-To find the latest version, check the `dist/` folder for the most recent `.skill` file.
+**Relationship types:**
+- `complements` - Often used together
+- `extends` - Builds on another skill's capabilities
+- `orchestrates` - Manages other skills (librarian only)
 
-### 3. Select Relevant Skills
+### 3. Find Knowledge Sources
 
-When user describes a task but doesn't know which skill to use:
+**Trigger:** "where can I learn about" / "find documentation" / "knowledge sources"
 
-1. Parse their request for domain keywords
-2. Match against skill descriptions and triggers
-3. Recommend the best-fit skill(s)
-4. Provide quick install link
+**Workflow:**
+1. Fetch `registry/knowledge-sources.yaml`
+2. Match request to discovery hints or sources
+3. Point to specific references or external docs
 
-**Matching keywords by domain:**
-- Marketing/SEM/ads/campaigns → rdc-marketing-analytics
-- Snowflake/SQL/analytics → rdc-marketing-analytics
-- Leads/conversion/CPL/ROAS → rdc-marketing-analytics
+**Response format:**
+```
+Knowledge sources for Snowflake queries:
 
-### 4. Create New Skills
+In skills:
+• rdc-marketing-analytics/references/schema.md - Table definitions
+• rdc-marketing-analytics/references/metrics.md - Metric calculations
 
-When user wants to add a new skill:
+External:
+• Snowflake Docs: https://docs.snowflake.com
+  Useful for: SQL syntax, functions, optimization
+```
 
-1. **Gather requirements** - Ask about use cases, triggers, domain
-2. **Create skill structure:**
-   ```
-   skills/{new-skill-name}/
-   ├── SKILL.md
-   └── references/   (if needed)
-   ```
-3. **Write SKILL.md** with proper frontmatter:
-   ```yaml
-   ---
-   name: skill-name
-   description: What it does and when to trigger it.
-   ---
-   ```
-4. **Commit to repo** via `github:create_or_update_file` or `github:push_files`
-5. **Package skill** - Remind user to create .skill file for dist/
+### 4. Check Versions & Updates
+
+**Trigger:** "check updates" / "what version" / "changelog"
+
+**Workflow:**
+1. Fetch `registry/versions.yaml`
+2. Compare to installed version (if known) or show current
+3. Present recent changes
+
+**Response format:**
+```
+rdc-marketing-analytics: v1.3.0 (Dec 4, 2025)
+
+Recent changes:
+• Added EFR metrics
+• Updated schema for Q4 tables
+• Added veteran homeowner targeting
+
+No breaking changes since v1.0.0
+```
+
+### 5. Install Skills
+
+**Workflow:**
+1. Check `dist/` for latest .skill file
+2. Provide download link and instructions
+
+**Response format:**
+```
+To install rdc-marketing-analytics:
+
+1. Download: [rdc-marketing-analytics-v1.3.0.skill](https://github.com/MoveRDC/claude-skills-marketing/raw/main/dist/rdc-marketing-analytics-v1.3.0.skill)
+2. Claude Desktop: Settings → Skills → Install
+```
+
+### 6. Create New Skills
+
+**Workflow:**
+1. Gather: name, description, triggers, use cases
+2. Create SKILL.md using template structure
+3. Push to `skills/{name}/` via GitHub
+4. Update `registry/skill-graph.yaml` with relationships
+5. Update `registry/versions.yaml` with initial version
+6. Remind to package for dist/
 
 See [references/skill-template.md](references/skill-template.md) for structure.
 
-### 5. Update Existing Skills
+### 7. Update Existing Skills
 
-When user wants to modify a skill:
-
-1. **Fetch current content** using `github:get_file_contents`
-2. **Make edits** based on user request
-3. **Commit changes** via `github:create_or_update_file`
-4. **Update CHANGELOG** with version notes
-5. **Remind about packaging** - New .skill file needed for dist/
-
-**Update patterns:**
-- Add new reference docs → Create in `references/` subfolder
-- Modify business logic → Edit SKILL.md or reference files
-- Add new tables/schemas → Update schema reference file
-- Fix errors → Direct edit with commit message
+**Workflow:**
+1. Fetch current content via GitHub
+2. Make requested edits
+3. Commit changes
+4. Update `registry/versions.yaml` with new version entry
+5. Update CHANGELOG.md
 
 ## GitHub Operations
 
-### Reading Files
+### Reading Registry
+```
+github:get_file_contents
+  owner: MoveRDC
+  repo: claude-skills-marketing
+  path: registry/skill-graph.yaml
+```
+
+### Reading Skills
 ```
 github:get_file_contents
   owner: MoveRDC
@@ -120,11 +175,11 @@ github:get_file_contents
 github:create_or_update_file
   owner: MoveRDC
   repo: claude-skills-marketing
-  path: skills/{skill-name}/SKILL.md
+  path: {path}
   branch: main
-  message: "Update {skill-name}: {description}"
-  content: {file content}
-  sha: {required for updates - get from get_file_contents}
+  message: "{description}"
+  content: {content}
+  sha: {required for updates}
 ```
 
 ### Multi-file Operations
@@ -133,36 +188,25 @@ github:push_files
   owner: MoveRDC
   repo: claude-skills-marketing
   branch: main
-  message: "Add new skill: {skill-name}"
-  files: [{path: "...", content: "..."}]
+  message: "{description}"
+  files: [{path, content}, ...]
 ```
 
-## Workflow: Add New Skill
+## Quick Reference
 
-1. **Plan**: Define name, description, triggers, references needed
-2. **Create**: Build SKILL.md following template
-3. **Commit**: Push to `skills/{name}/` folder
-4. **Update README**: Add to available skills section
-5. **Update CHANGELOG**: Document the addition
-6. **Package**: Create .skill file and add to dist/
-
-## Workflow: User Wants to Install
-
-Quick response format:
-```
-To install {skill-name}:
-
-1. Download the skill file:
-   [Download {skill-name}.skill](https://github.com/MoveRDC/claude-skills-marketing/raw/main/dist/{filename}.skill)
-
-2. In Claude, go to Settings → Skills → Install
-
-3. Test with: "{example query}"
-```
+| User wants | Action |
+|------------|--------|
+| List skills | Fetch skills/ directory |
+| Skill relationships | Fetch registry/skill-graph.yaml |
+| Find documentation | Fetch registry/knowledge-sources.yaml |
+| Check versions | Fetch registry/versions.yaml |
+| Install skill | Link to dist/{name}-{version}.skill |
+| Create skill | Use template, push to skills/, update registry |
+| Update skill | Edit files, update versions.yaml |
 
 ## Conciseness Guidelines
 
-- Lead with action (download link, command)
+- Lead with action (link, answer, recommendation)
 - Skip explanations user didn't ask for
 - One-liner when possible, expand only if asked
-- For installation: link + 2-step max
+- For relationships: show the "why" briefly

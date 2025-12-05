@@ -1,0 +1,82 @@
+# Skill Relationship Graph
+# Maps how skills connect, complement, and depend on each other
+
+version: "1.0"
+lastUpdated: "2025-12-05"
+
+skills:
+  rdc-marketing-analytics:
+    category: analytics
+    layer: domain
+    description: SEM campaigns, lead analysis, Snowflake queries
+    capabilities:
+      - snowflake-queries
+      - sem-analysis
+      - lead-metrics
+      - conversion-tracking
+      - roas-calculation
+
+  data-quality-validation:
+    category: quality
+    layer: infrastructure
+    description: Data validation and schema checking
+    capabilities:
+      - data-validation
+      - schema-checking
+      - null-detection
+      - type-verification
+
+  taxonomy-updater:
+    category: content
+    layer: utility
+    description: Taxonomy and content classification management
+    capabilities:
+      - taxonomy-management
+      - content-classification
+      - category-updates
+
+  skills-librarian:
+    category: meta
+    layer: orchestration
+    description: Manages the skill toolkit itself
+    capabilities:
+      - skill-discovery
+      - skill-installation
+      - relationship-mapping
+      - knowledge-discovery
+      - version-tracking
+
+relationships:
+  # Complementary: Often used together
+  - type: complements
+    source: rdc-marketing-analytics
+    target: data-quality-validation
+    reason: Run validation before analytics queries to catch data issues early
+
+  - type: complements
+    source: taxonomy-updater
+    target: rdc-marketing-analytics
+    reason: Align campaign taxonomy with analytics dimensions
+
+  # The librarian orchestrates all skills
+  - type: orchestrates
+    source: skills-librarian
+    target: all
+    reason: Manages discovery, installation, and relationships for all skills
+
+bundles:
+  marketing-data-pipeline:
+    description: Complete marketing data analysis workflow
+    skills:
+      - data-quality-validation
+      - rdc-marketing-analytics
+    workflow: "Validate data quality → Run analytics queries"
+    use_when: "Starting a new analysis or debugging data issues"
+
+  content-optimization:
+    description: Content and taxonomy management with analytics
+    skills:
+      - taxonomy-updater
+      - rdc-marketing-analytics
+    workflow: "Update taxonomy → Analyze performance by new categories"
+    use_when: "Reorganizing content categories or campaign structures"
