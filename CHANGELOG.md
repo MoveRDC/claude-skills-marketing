@@ -4,6 +4,28 @@ All notable changes to the Marketing Analytics Claude Skills will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v1.4] - 2025-12-04
+
+### Added
+
+**New Skill: data-quality-validation**
+- Systematic data validation framework for analytical work
+- 9 validation categories: query correctness, data consistency, cross-source reconciliation, null values, date balance, anomalies, vertical filters, metric calculation, aggregation grain
+- 12 real-world pitfalls with detailed examples and solutions
+- Metric calculation validation (median vs mean, rate normalization)
+- Aggregation grain validation (per-record vs per-entity detection)
+- Contribution analysis validation for non-additive metrics
+- Informational validation approach - never blocks analysis
+- Decision frameworks for metric selection and data quality trade-offs
+- Technical validation framework with SQL and Python examples
+- Common pitfalls reference with actual scenarios from marketing analytics work
+
+**Philosophy: Inform, Don't Block**
+- All validations are informational
+- Analysis always proceeds
+- Users decide whether to fix or continue
+- Supports informed decision-making without creating bottlenecks
+
 ## [v1.3] - 2025-12-04
 
 ### Added
@@ -75,6 +97,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| v1.4 | 2025-12-04 | Added data-quality-validation skill for systematic validation |
 | v1.3 | 2025-12-04 | Added skills-librarian meta-skill for repo management |
 | v1.2 | 2025-12-03 | Added EFR, ROAS, business context, glossary, platform definitions |
 | v1.1 | 2024-12-01 | Initial release with core analytics knowledge |
