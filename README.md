@@ -18,6 +18,22 @@ Specialized knowledge for real estate marketing analytics, including SEM campaig
 - Geographic market analysis frameworks
 - Common analysis patterns and best practices
 
+### Data Quality Validation v1.0 (New!)
+Systematic data validation, error detection, cross-source reconciliation, and query correctness checking for analytical work.
+
+**[Download Latest Version](dist/data-quality-validation-v1.0.skill)** ⬅️ Install this file in Claude
+
+**What it includes:**
+- 9 validation categories (query correctness, data consistency, cross-source reconciliation, null values, date balance, anomalies, vertical filters, metric calculation, aggregation grain)
+- 12 real-world pitfalls with examples and solutions
+- Metric calculation guidance (median vs mean, rate normalization)
+- Aggregation grain validation (per-record vs per-entity detection)
+- Contribution analysis for non-additive metrics (understanding expected gaps)
+- 100% informational approach - validates without blocking analysis
+- Decision frameworks for metric selection and data quality trade-offs
+
+**Triggers:** "validate this query", "check for errors", "why don't these numbers match", "should I use median or mean", "why don't contributions sum to 100%", "reconcile these metrics", "verify data quality"
+
 ### Skills Librarian (New!)
 A meta-skill that helps manage this skill repository. Use it to discover available skills, get installation instructions, create new skills, or update existing ones.
 
@@ -47,6 +63,8 @@ Try these example queries:
 "Analyze our Google Buy Intent campaigns from last month"
 "Show me which DMAs have zero leads despite having inventory"
 "What external factors affect our lead volume?"
+"Validate this query for potential issues"
+"Why don't these contribution percentages add up to 100%?"
 ```
 
 ## 🔧 MCP Server Setup
@@ -67,7 +85,7 @@ chmod +x scripts/setup-mcp-servers.sh
 
 See the detailed guides:
 - **[Complete MCP Setup Guide](docs/mcp-setup-guide.md)** - All MCP servers (Snowflake, GitHub, Google Ads)
-- **[GitHub MCP Setup](docs/github-mcp-setup.md)** - GitHub-specific setup
+- **[GitHub MCP Setup](docs/github-mcp-setup.md)** - GitHub integration setup
 
 ### Example Config
 
@@ -146,6 +164,11 @@ claude-skills-marketing/
 ├── CONTRIBUTING.md                    # Contribution guidelines
 ├── CHANGELOG.md                       # Version history
 ├── skills/                            # Skill source files
+│   ├── data-quality-validation/       # Data quality & validation
+│   │   ├── SKILL.md                   # Core validation skill
+│   │   └── references/                # Validation references
+│   │       ├── validation_framework.md # Technical framework
+│   │       └── common_pitfalls.md     # Real-world examples
 │   ├── rdc-marketing-analytics/
 │   │   ├── SKILL.md                   # Core skill documentation
 │   │   └── references/                # Reference documentation
@@ -156,6 +179,7 @@ claude-skills-marketing/
 │       ├── SKILL.md                   # Librarian skill
 │       └── references/                # Templates and repo map
 ├── dist/                              # Compiled .skill files (install these)
+│   ├── data-quality-validation-v1.0.skill
 │   └── rdc-marketing-analytics-v1.1.skill
 ├── docs/                              # Team documentation
 │   ├── installation-guide.md          # Skill installation
