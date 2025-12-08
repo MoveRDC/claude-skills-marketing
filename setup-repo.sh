@@ -22,14 +22,9 @@ echo ""
 echo "📤 Step 2: Pushing code to GitHub..."
 cd /home/claude/claude-skills-marketing
 
-# Set the remote (using token from environment or hardcoded)
-if [ -z "$GITHUB_TOKEN" ]; then
-    echo "Using token from script..."
-    git remote set-url origin https://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@github.com/MoveRDC/claude-skills-marketing.git
-else
+# Set the remote
     echo "Using token from environment..."
     git remote set-url origin https://$GITHUB_TOKEN@github.com/MoveRDC/claude-skills-marketing.git
-fi
 
 # Push to main branch
 echo "Pushing to main branch..."
