@@ -54,7 +54,7 @@ Lead-to-campaign attribution mapping.
 
 ## rdc_marketing.seller.sell_revenue_est
 
-Revenue and EFR (Expected Future Revenue) estimates per lead.
+Revenue, EFR (Expected Future Revenue), and property value estimates per lead.
 
 **Grain**: request_id + transaction_type
 
@@ -64,10 +64,29 @@ Revenue and EFR (Expected Future Revenue) estimates per lead.
 | `transaction_type` | STRING | 'buy' or 'sell' |
 | `rep_efr` | FLOAT | EFR v1 - original calculation |
 | `actualizedrev` | FLOAT | Realized/actualized revenue |
+| `estimated_home_value` | FLOAT | Estimated value of the property associated with the lead |
 
 **Join Notes**:
 - Join to attribution: `request_id + transaction_type`
 - For EFR, prefer v2 from `seller_lead_efr_paid_search` when available
+
+**Home Value Analysis**:
+```sql
+-- Home value distribution
+SELECT
+    CASE 
+        WHEN estimated_home_value < 100000 THEN 'Under $100K'
+        WHEN estimated_home_value < 250000 THEN '$100K-$250K'
+        WHEN estimated_home_value < 500000 THEN '$250K-$500K'
+        WHEN estimated_home_value < 750000 THEN '$500K-$750K'
+        WHEN estimated_home_value < 1000000 THEN '$750K-$1M'
+        WHEN estimated_home_value >= 1000000 THEN '$1M+'
+        ELSE 'Unknown'
+    END AS home_value_bucket,
+    COUNT(DISTINCT request_id) AS lead_count
+FROM rdc_marketing.seller.sell_revenue_est
+GROUP BY 1;
+```
 
 ---
 
@@ -107,11 +126,12 @@ Lead quality scoring.
 |-------|------|-------------|
 | `request_id` | STRING | Unique lead identifier |
 | `transaction_type` | STRING | 'buy' or 'sell' |
-| `quality_level` | STRING | Quality tier ('GQ' = Good Quality, others) |
+| `quality_level` | STRING | Quality tier ('GQ' = Good Quality, 'LQ' = Low Quality) |
 
 **Quality Level Values**:
 - `'GQ'` - Good Quality (primary success metric)
-- Other values indicate lower quality tiers
+- `'LQ'` - Low Quality
+- NULL/Unknown - Quality not yet determined
 
 ---
 
