@@ -41,6 +41,7 @@ When a seller analytics task is requested:
 | Lead quality breakdown? | `sell_lead_quality` | `sell_attribution` |
 | Downstream conversion? | `sell_downfunnel` | `sell_attribution` |
 | Spend + Leads combined? | `sell_spend` | LEFT JOIN leads subquery |
+| Home value distribution? | `sell_revenue_est` | `sell_attribution` |
 
 ## Schema Overview
 
@@ -50,14 +51,14 @@ When a seller analytics task is requested:
 |-------|---------|-------|
 | `sell_spend` | Campaign spend data | date + campaign + adgroup |
 | `sell_attribution` | Lead-to-campaign attribution | request_id + transaction_type |
-| `sell_revenue_est` | Revenue and EFR estimates | request_id + transaction_type |
+| `sell_revenue_est` | Revenue, EFR, and home value | request_id + transaction_type |
 | `sell_downfunnel` | Downstream conversion events | request_id + transaction_type |
 
 ### Supporting Tables
 
 | Table | Schema | Purpose |
 |-------|--------|---------|
-| `sell_lead_quality` | `rdc_analytics.ons` | Lead quality scoring (GQ flag) |
+| `sell_lead_quality` | `rdc_analytics.ons` | Lead quality scoring (GQ/LQ) - **sell leads only** |
 | `seller_lead_efr_paid_search` | `rdc_analytics.revenue` | EFR v2 for paid search |
 
 ## Key Concepts
@@ -67,7 +68,7 @@ Leads are categorized by intent:
 - `'buy'` - Buyer intent leads
 - `'sell'` - Seller intent leads
 
-**Always segment or filter by transaction_type** - these are fundamentally different lead types.
+**Always segment or filter by transaction_type** - these are fundamentally different lead types with different quality metrics available.
 
 ### Composite Key Pattern
 Most seller tables use a composite key:
@@ -86,20 +87,100 @@ Two versions exist:
 COALESCE(ra.rep_efr_v2, r.rep_efr) AS efr
 ```
 
-### Lead Quality Levels
-From `sell_lead_quality.quality_level`:
-- `'GQ'` - Good Quality (primary metric)
-- Other values indicate lower quality tiers
+Note: GQ/LQ coefficients impact EFR - GQ leads are valued at ~147% of baseline, LQ at ~75%.
 
-### UCA (User-to-Agent Connection)
-Measures downstream conversion:
+### Home Value
+Use `estimated_home_value` from `sell_revenue_est` for property value analysis:
 ```sql
--- UCA within 14 days
+SELECT
+    CASE 
+        WHEN estimated_home_value < 150000 THEN 'Under $150K'
+        WHEN estimated_home_value < 300000 THEN '$150K-$300K'
+        WHEN estimated_home_value < 500000 THEN '$300K-$500K'
+        WHEN estimated_home_value < 750000 THEN '$500K-$750K'
+        WHEN estimated_home_value >= 750000 THEN '$750K+'
+        ELSE 'Unknown'
+    END AS home_value_bucket,
+    COUNT(DISTINCT request_id) AS leads
+FROM rdc_marketing.seller.sell_revenue_est
+GROUP BY 1;
+```
+
+## Lead Quality Metrics
+
+Quality can be measured at different points in the lead lifecycle. Choose the right metric based on how quickly you need signal vs. how accurate you need it to be.
+
+### Quality Metrics Hierarchy
+
+| Metric | Timeframe | Applies To | What It Measures |
+|--------|-----------|------------|------------------|
+| **GQ/LQ** | At submission | Sell leads only | Pre-qualified based on property/submitter validation |
+| **UCA 14d** | 14 days | All leads | Lead matched to agent (early engagement) |
+| **Awarded 30d** | 30 days | All leads | Listing agreement signed |
+| **Actualized Revenue** | 6+ months | All leads | Actual revenue realized (ultimate truth) |
+
+### GQ/LQ Quality Scoring (Sell Leads Only)
+
+The `sell_lead_quality` table provides immediate quality classification for **sell intent leads only**. Buy leads do not have GQ/LQ scores.
+
+**V0 Qualification Criteria (GQ = Good Quality):**
+- Property is residential (not land)
+- Property is not a mobile home
+- Estimated home value ≥ $150K
+- Lead submitter matches property in CoreLogic data (deed or mortgage records)
+- Lead passes S4 validation checks (email, phone, spam filtering)
+
+**Quality Level Values:**
+- `'GQ'` - Good Quality: meets all criteria above
+- `'LQ'` - Low Quality: fails one or more criteria
+
+**Performance Difference:**
+- GQ leads: ~147% of baseline 180-day sold rate
+- LQ leads: ~75% of baseline 180-day sold rate
+
+**Important:** When analyzing quality for mixed buy/sell campaigns, GQ/LQ will be NULL for all buy leads. Filter to `transaction_type = 'sell'` for accurate GQ rates.
+
+```sql
+-- Correct: GQ rate for sell leads only
+SELECT
+    COUNT(DISTINCT CASE WHEN q.quality_level = 'GQ' THEN a.request_id END) AS gq_leads,
+    COUNT(DISTINCT a.request_id) AS total_sell_leads,
+    ROUND(100.0 * COUNT(DISTINCT CASE WHEN q.quality_level = 'GQ' THEN a.request_id END) 
+          / NULLIF(COUNT(DISTINCT a.request_id), 0), 1) AS gq_rate
+FROM rdc_marketing.seller.sell_attribution AS a
+LEFT JOIN rdc_analytics.ons.sell_lead_quality AS q 
+    ON a.request_id = q.request_id 
+    AND a.transaction_type = q.transaction_type
+WHERE a.transaction_type = 'sell'  -- Filter to sell leads for GQ analysis
+  AND a.lead_date >= DATEADD('day', -30, CURRENT_DATE());
+```
+
+### Downstream Quality Metrics (All Leads)
+
+For buy leads, or when you need confirmation of lead quality beyond the initial GQ/LQ score, use downstream metrics from `sell_downfunnel`:
+
+**UCA 14d (Unconfirmed Award within 14 days):**
+```sql
 COUNT(DISTINCT CASE 
     WHEN DATEDIFF('day', d.created_date, d.matchdate) <= 14 
     THEN d.request_id 
 END) AS uca_14d
 ```
+
+**Awarded 30d:**
+```sql
+COUNT(DISTINCT CASE WHEN d.awarded_30d = TRUE THEN d.request_id END) AS awarded_30d
+```
+
+### When to Use Each Metric
+
+| Use Case | Recommended Metric |
+|----------|-------------------|
+| Real-time campaign optimization | GQ/LQ (sell) or click-to-lead rate (buy) |
+| Weekly performance reporting | GQ rate + UCA 14d |
+| Monthly business reviews | Awarded 30d + EFR |
+| True ROI analysis | Actualized Revenue (requires 6+ month lookback) |
+| Paid media bid optimization | GQ/LQ (this is the QLC signal platforms optimize toward) |
 
 ## Campaign Classification
 
@@ -237,22 +318,23 @@ GROUP BY 1, 2
 ORDER BY 1 DESC;
 ```
 
-### Pattern 2: Lead Quality Analysis
+### Pattern 2: Lead Quality Analysis (Sell Leads)
 ```sql
 SELECT
     DATE_TRUNC('week', a.lead_date) AS week,
-    a.transaction_type,
-    COUNT(DISTINCT a.request_id) AS total_leads,
+    COUNT(DISTINCT a.request_id) AS total_sell_leads,
     COUNT(DISTINCT CASE WHEN q.quality_level = 'GQ' THEN a.request_id END) AS gq_leads,
+    COUNT(DISTINCT CASE WHEN q.quality_level = 'LQ' THEN a.request_id END) AS lq_leads,
     ROUND(100.0 * COUNT(DISTINCT CASE WHEN q.quality_level = 'GQ' THEN a.request_id END) 
           / NULLIF(COUNT(DISTINCT a.request_id), 0), 1) AS gq_rate
 FROM rdc_marketing.seller.sell_attribution AS a
 LEFT JOIN rdc_analytics.ons.sell_lead_quality AS q 
     ON a.request_id = q.request_id 
     AND a.transaction_type = q.transaction_type
-WHERE a.lead_date >= DATEADD('day', -90, CURRENT_DATE())
-GROUP BY 1, 2
-ORDER BY 1 DESC, 2;
+WHERE a.transaction_type = 'sell'  -- GQ/LQ only applies to sell leads
+  AND a.lead_date >= DATEADD('day', -90, CURRENT_DATE())
+GROUP BY 1
+ORDER BY 1 DESC;
 ```
 
 ### Pattern 3: Campaign Type Performance
@@ -302,6 +384,39 @@ GROUP BY 1, 2, 3
 ORDER BY total_spend DESC;
 ```
 
+### Pattern 5: Full Quality Funnel Analysis
+```sql
+WITH lead_quality AS (
+    SELECT 
+        a.request_id,
+        a.transaction_type,
+        a.lead_date,
+        q.quality_level,
+        d.matchdate,
+        d.awarded_30d,
+        r.actualizedrev,
+        CASE WHEN DATEDIFF('day', d.created_date, d.matchdate) <= 14 THEN 1 ELSE 0 END AS uca_14d_flag
+    FROM rdc_marketing.seller.sell_attribution AS a
+    JOIN rdc_marketing.seller.sell_revenue_est AS r
+        ON r.request_id = a.request_id AND r.transaction_type = a.transaction_type
+    LEFT JOIN rdc_analytics.ons.sell_lead_quality AS q
+        ON a.request_id = q.request_id AND a.transaction_type = q.transaction_type
+    LEFT JOIN rdc_marketing.seller.sell_downfunnel AS d
+        ON d.request_id = a.request_id AND d.transaction_type = a.transaction_type
+    WHERE a.lead_date >= DATEADD('day', -90, CURRENT_DATE())
+)
+SELECT
+    transaction_type,
+    COALESCE(quality_level, 'N/A (Buy)') AS quality_level,
+    COUNT(DISTINCT request_id) AS leads,
+    SUM(uca_14d_flag) AS uca_14d,
+    COUNT(DISTINCT CASE WHEN awarded_30d THEN request_id END) AS awarded_30d,
+    SUM(actualizedrev) AS actualized_revenue
+FROM lead_quality
+GROUP BY 1, 2
+ORDER BY 1, 2;
+```
+
 ## Outage/Incident Analysis Pattern
 
 For analyzing impact of site outages on seller leads:
@@ -338,10 +453,12 @@ GROUP BY 1;
 |--------|------------|-------------|
 | Leads | Distinct lead submissions | `COUNT(DISTINCT request_id)` |
 | Sell Intent Leads | Leads with sell transaction type | `COUNT(DISTINCT CASE WHEN transaction_type = 'sell' ...)` |
-| GQ Leads | Good quality leads | `COUNT(DISTINCT CASE WHEN quality_level = 'GQ' ...)` |
+| GQ Leads | Good quality sell leads | `COUNT(DISTINCT CASE WHEN quality_level = 'GQ' ...)` (sell only) |
+| GQ Rate | Percentage of sell leads that are GQ | `GQ Leads / Sell Leads * 100` |
 | EFR | Expected Future Revenue | `SUM(COALESCE(rep_efr_v2, rep_efr))` |
 | Actualized Revenue | Realized revenue | `SUM(actualizedrev)` |
-| UCA 14d | Connections within 14 days | See UCA formula above |
+| UCA 14d | Connections within 14 days | `COUNT where matchdate - created_date <= 14` |
+| Awarded 30d | Listing agreements within 30 days | `COUNT where awarded_30d = TRUE` |
 | CPL | Cost per lead | `spend / NULLIF(leads, 0)` |
 | Conversion Rate | Clicks to leads | `leads / NULLIF(clicks, 0)` |
 | CTR | Click-through rate | `clicks / NULLIF(impressions, 0) * 100` |
@@ -355,6 +472,7 @@ GROUP BY 1;
 | sell_attribution | Daily |
 | sell_revenue_est | Daily |
 | sell_lead_quality | Daily |
+| sell_downfunnel | Daily |
 | seller_lead_efr_paid_search | Daily |
 
 **Note**: Most seller data has T-1 latency (yesterday's data available today).
@@ -368,3 +486,5 @@ GROUP BY 1;
 5. **Date alignment**: Spend is `calendar_date`, leads is `lead_date`
 6. **Channel naming inconsistency**: Note `display/social ads` vs `display_social_advertising` - different naming for Facebook vs Google display
 7. **EFR v2 scope**: `seller_lead_efr_paid_search` only covers paid search leads - other channels use v1 only
+8. **GQ/LQ is sell-only**: Buy leads will always have NULL in `sell_lead_quality` - don't include them in GQ rate calculations
+9. **Year in date filters**: Double-check year when using date literals (e.g., `'2025-11-15'` vs `'2024-11-15'`)
