@@ -1,6 +1,6 @@
 ---
 name: seller-analytics
-description: Analyzes seller lead performance, revenue attribution, and paid search campaigns for the Seller vertical (acquired business with separate data architecture). Use when working with seller leads, sell intent, EFR calculations, seller paid search, or B2C seller campaigns. Triggers include seller leads, sell_spend, sell_attribution, EFR, GQ leads, UCA, seller revenue, PMAX, DSA, brand campaigns, seller outage analysis.
+description: Analyzes seller lead performance, revenue attribution, and marketing campaigns for the Seller vertical (acquired business with separate data architecture). Use when working with seller leads, sell intent, EFR calculations, seller paid search, display/social, or B2C/B2B seller campaigns. Triggers include seller leads, sell_spend, sell_attribution, EFR, GQ leads, UCA, seller revenue, PMAX, DSA, brand campaigns, seller outage analysis, facebook ads, display ads.
 ---
 
 # Seller Analytics Skill
@@ -118,17 +118,81 @@ CASE
 END AS campaign_label
 ```
 
-## Standard Filters
+## Channel & Audience Dimensions
 
-Always apply these filters to `sell_spend`:
+The `sell_spend` table contains multiple marketing channels, audience segments, and ad partners.
+
+### Available Channels
+
+| Channel | Description |
+|---------|-------------|
+| `'paid search'` | Google/Bing search ads |
+| `'display/social ads'` | Facebook display and social advertising |
+| `'display_social_advertising'` | Google display network (note: different naming convention) |
+| `'digital brand'` | Brand awareness campaigns |
+
+### Target Customer Segments
+
+| Value | Description |
+|-------|-------------|
+| `'b2c'` | Business-to-consumer (homeowners/sellers) |
+| `'b2b'` | Business-to-business (agents/brokers) |
+
+### Ad Partners
+
+| Partner | Channels |
+|---------|----------|
+| `'google'` | paid search, display_social_advertising, digital brand |
+| `'bing'` | paid search |
+| `'facebook'` | display/social ads |
+
+### Channel × Target Customer × Partner Matrix
+
+| Channel | Target Customer | Partner |
+|---------|-----------------|---------|
+| paid search | b2c | google |
+| paid search | b2c | bing |
+| paid search | b2b | google |
+| display/social ads | b2c | facebook |
+| display/social ads | b2b | facebook |
+| display_social_advertising | b2b | google |
+| digital brand | b2b | google |
+
+### Common Filter Patterns
+
+**B2C Paid Search (most common):**
 ```sql
 WHERE channel = 'paid search'
   AND target_customer = 'b2c'
-  AND calendar_date BETWEEN '2024-01-01' AND CURRENT_DATE() - 1
 ```
 
-**Available channel values**: 'paid search', others TBD
-**Available target_customer values**: 'b2c', 'b2b'
+**All Paid Search (B2B + B2C):**
+```sql
+WHERE channel = 'paid search'
+```
+
+**Facebook/Social Only:**
+```sql
+WHERE channel = 'display/social ads'
+```
+
+**All B2B Marketing:**
+```sql
+WHERE target_customer = 'b2b'
+```
+
+**Cross-Channel Analysis:**
+```sql
+SELECT 
+    channel,
+    target_customer,
+    partner,
+    SUM(spend) AS spend
+FROM rdc_marketing.seller.sell_spend
+WHERE calendar_date >= DATEADD('day', -30, CURRENT_DATE())
+GROUP BY 1, 2, 3
+ORDER BY spend DESC;
+```
 
 ## Common Query Patterns
 
@@ -221,6 +285,23 @@ GROUP BY 1
 ORDER BY total_spend DESC;
 ```
 
+### Pattern 4: Cross-Channel Performance Comparison
+```sql
+SELECT
+    channel,
+    target_customer,
+    partner,
+    SUM(spend) AS total_spend,
+    SUM(impressions) AS total_impressions,
+    SUM(clicks) AS total_clicks,
+    ROUND(SUM(spend) / NULLIF(SUM(clicks), 0), 2) AS cpc,
+    ROUND(100.0 * SUM(clicks) / NULLIF(SUM(impressions), 0), 2) AS ctr
+FROM rdc_marketing.seller.sell_spend
+WHERE calendar_date >= DATEADD('day', -30, CURRENT_DATE())
+GROUP BY 1, 2, 3
+ORDER BY total_spend DESC;
+```
+
 ## Outage/Incident Analysis Pattern
 
 For analyzing impact of site outages on seller leads:
@@ -263,6 +344,8 @@ GROUP BY 1;
 | UCA 14d | Connections within 14 days | See UCA formula above |
 | CPL | Cost per lead | `spend / NULLIF(leads, 0)` |
 | Conversion Rate | Clicks to leads | `leads / NULLIF(clicks, 0)` |
+| CTR | Click-through rate | `clicks / NULLIF(impressions, 0) * 100` |
+| CPC | Cost per click | `spend / NULLIF(clicks, 0)` |
 
 ## Data Freshness
 
@@ -283,3 +366,5 @@ GROUP BY 1;
 3. **EFR versions**: Check if v2 exists before using v1
 4. **Campaign classification**: Based on naming, not a field
 5. **Date alignment**: Spend is `calendar_date`, leads is `lead_date`
+6. **Channel naming inconsistency**: Note `display/social ads` vs `display_social_advertising` - different naming for Facebook vs Google display
+7. **EFR v2 scope**: `seller_lead_efr_paid_search` only covers paid search leads - other channels use v1 only
