@@ -27,7 +27,7 @@ Broader economic conditions that impact real estate activity:
 
 ### Competitive Activity
 Market dynamics that affect lead generation:
-- **Market Share**: Competition for a finite pool of potential clients
+- **Market Share**: Competition for a finite pool of potential consumers
 - **Impact**: Competitive spend can affect costs and lead volume
 
 ## Key Performance Indicators (KPIs)
