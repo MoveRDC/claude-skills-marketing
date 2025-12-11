@@ -112,6 +112,7 @@ Market dynamics that affect lead generation:
 **Common Types**:
 - **Session to Lead**: Overall conversion rate
 - **SRP to PDP**: Search results page to property detail page
+- **SRP to LDP**: Search results page to listing detail page
 - **PDP to Lead**: Property detail page to lead submission
 **Benchmarks**:
 - SRP → PDP: 15-25%
