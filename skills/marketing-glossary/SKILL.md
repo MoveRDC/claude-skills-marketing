@@ -81,7 +81,7 @@ Market dynamics that affect lead generation:
 **Usage**: Measure of conversion from click to lead  
 **Also Known As**: Click-to-lead conversion rate
 
-### Lead Price
+### Cost Per Lead
 **Definition**: The cost to acquire a single lead or the value of the property associated with a lead.  
 **Context**: Can refer to both acquisition cost (CPL) or property list price  
 **Calculation Methods**:
