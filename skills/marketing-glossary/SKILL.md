@@ -39,6 +39,9 @@ Market dynamics that affect lead generation:
 
 ### Lead
 **Definition**: A unique event where a person submits their personally identifiable information (PII) to buy, sell, or rent a home.  
+- Unique Lead Submitter ULS (alias lead) or a unique consumer that has submitted at least one lead. Can some
+- Lead Submission (alias inquiry, lead) : A unique event where a consumer shares their personally identifiable information (PII) via an online form or over the phone to express interest to buy, sell, or rent a home. A single unique users can submit more than one lead on different listings or for different lines of business (buy, sell, rent)
+- Lead Delivery(alias lead): A unique event where a Lead is delivered via RDC's lead routing systems (ALA/GLA) to a client contract to fulfill an RDC client contract. A lead can be delivered to more than one client contract in some cases.
 **Context**: Each lead represents a potential transaction opportunity.
 
 ### EFR (Expected Future Revenue)
