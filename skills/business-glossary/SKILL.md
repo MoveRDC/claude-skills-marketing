@@ -30,6 +30,106 @@ Market dynamics that affect lead generation:
 - **Market Share**: Competition for a finite pool of potential consumers
 - **Impact**: Competitive spend can affect costs and lead volume
 
+## RDC Products
+
+### Monetization Types
+
+#### Subscription
+Upfront payment model where customers pay a fixed amount for a set period
+
+#### Referral
+Performance-based model where customers pay a referral fee when a transaction closes
+
+### Core Buy
+Market VIP, Connections Plus, Ready Connect Concierge. Sometimes includes new home construction - so best to clarify/specify
+
+### Market VIP (MVIP)
+**Type:** Subscription-based Lead Generation (Buyer Leads)
+
+- Premium product targeting large brokerages and agent teams
+- Customers purchase exclusive leads for a promised time window by buying a guaranteed Share of Voice (SOV) in specific markets
+- Zip-based product sold in increments of 20% SOV (20%, 40%, 60%, 80%, 100%)
+- Live-transfer leads delivered directly to brokers/agents
+- Product codes: MARKETVIP (legacy), MARKETVIPPACKAGE
+- Operates in "Pure" and "Unity" markets
+- Higher priority in product hierarchy: VU > MVIP > C+ > MRC > RCC
+
+### Connections Plus (C+, Cplus, C Plus)
+**Type:** Subscription-based Lead Generation (Buyer Leads)
+
+- Customers purchase an allotment of leads (slots)
+- Core sellable unit is a "slot" (up to 40 leads per slot)
+- Agents can purchase slots in specific zip codes or markets
+- Customers pay upfront before receiving leads
+- Leads sent directly to agents (not live-transferred)
+
+### Ready Connect Concierge (RCC, Referral)
+**Type:** Referral-based Lead Generation (Buyer Leads)
+
+- Free lead assignment with referral fee paid upon successful transaction close
+- CSRs (Consumer Success Representatives) live-transfer leads directly to agents
+- Agents pay 30-40% referral fee standard when transaction closes
+- No upfront costs for agents
+
+### Sales Builder (New Construction, New Con, New Homes)
+**Type:** Cost-Per-Lead for New Home Builders
+
+- Allows builders to control sales process and receive leads directly from their listings
+- Performance-based billing with costs capped per community (typically 3 leads per month cap)
+- Builder-direct new construction product
+- Leads sent to builders via API, email, or both
+
+### Veterans United
+**Type:** Cost-Per-Lead for sale
+
+- VU receives exclusive access to veteran leads across both buyer and seller intent
+- Consumers self-identify as veterans via checkbox on lead forms
+- Available across multiple surfaces: Seller RFP, PDP, My Home, Seller's Marketplace, UpNest, Mason forms
+- Veterans United Realty provides specialized service for veterans (expertise in VA loans, navigating veteran-specific paperwork)
+- Serves both buy and sell intent
+
+### UpNest (RealChoice Selling, RealPro Select Seller Leads)
+**Type:** Seller Referral and Subscription Share of Voice Product
+
+- Agents compete by submitting proposals to sellers
+- Referral-based model: agents pay referral fee (typically 30-40%) only when transaction closes. Revenue model: Agent share × Referral fee × Home value × Sale probability
+- Subscription Share of Voice model: RealPro Select Seller Leads (Listing Tool Kit for Teams aka LTK Teams)
+- Serves both buy and sell intent leads
+
+### Rentals (Zillow, For Rent)
+**Type:** Cost-Per-Lead (Zillow partnership) + ILS partnerships
+
+- Zillow integration: $8 per lead (CPL) with monthly cap of 14 leads per listing ($112 max/month)
+- ~10% of rental inventory is monetized (Zillow + paid ILS partners)
+- ~40% from free ILS/syndicator partners
+- ~50% from other sources
+- Includes multifamily and single-family rental listings
+
+### Lender (Mortgage, MRC)
+**Type:** Lead Generation for Mortgage Lenders
+
+- **MRC (Mortgage Research Center)**: Third-party partner operating lender products
+- **Lender Choice Experience (LCE)**: Consumers choose from up to 3 lenders
+- Products include:
+  - Mortgage leads (55-60% of revenue)
+  - Prequal revenue (~40%)
+  - Rates revenue (~5%)
+- Previously "ReadyConnect Mortgage" (RCM) - now migrated to MRC platform
+- Consumers submit via questionnaire and are matched with lenders
+- Part of product hierarchy: VU > MVIP > C+ > MRC > RCC
+
+### Media
+**Type:** Advertising Revenue
+
+- Generates >15% of Realtor.com's total revenue (~$90M in FY23)
+- Includes:
+  - Display/banner advertising from digital platforms (Google, Facebook, Amazon)
+  - Custom sponsored content and partnerships
+  - Programmatic advertising (DSP platforms)
+  - Brand media placements
+- Products include: Market Reach (MRE), Audience Extension (AUDIENCEEXT)
+- Sold to Fortune 500 advertisers (mortgage banks, insurance, retailers)
+
 ## Key Performance Indicators (KPIs)
 
 ### Spend
@@ -90,7 +190,7 @@ Market dynamics that affect lead generation:
 ### UU (Unique Users)
 **Definition**: A Unique User (UU) is a distinct consumer visiting RDC within a reporting period, deduplicated by an identity key used in our analytics pipeline. 
 - Unadjusted UU: distinct visitors based on the Adobe/Omniture-generated visitor ID (vendor cookie-level identity). 
-- Adjusted UU: distinct visitors based on RDC’s cross-platform identity, the ADJUSTED_UU_ID (RDC-generated cookie/user key that unifies web, mWeb, and app).
+- Adjusted UU: distinct visitors based on RDC's cross-platform identity, the ADJUSTED_UU_ID (RDC-generated cookie/user key that unifies web, mWeb, and app).
 
 ### Conversion Rate
 **Definition**: Percentage of users who complete a desired action.  
@@ -153,7 +253,7 @@ Market dynamics that affect lead generation:
 **Definition**: Page displaying property search results.  
 
 ### PDP (Property Detail Page)
-**Definition**: Individual property detauk page. This is for properties not currently for sale.
+**Definition**: Individual property detail page. This is for properties not currently for sale.
 
 ### LDP (Listing Detail Page)
 **Definition**: Individual property listing page. This is for properties currently for sale.  
