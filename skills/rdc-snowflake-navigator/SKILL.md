@@ -21,13 +21,12 @@ This skill provides comprehensive knowledge of RDC's Snowflake data warehouse, i
 
 ### Key Identity Fields
 - **User ID**: `adjusted_uu_id` (canonical across tables)
-- **Session ID**: `visit_id` (clickstream)
+- **Visit ID**: `visit_id` (clickstream)
 - **Lead ID**: `submitted_lead_id` or `inquiry_lead_id`
 - **GCLID**: `google_click_id` (paid search attribution)
 
 ### Key Date Fields
 - Clickstream: `event_date_mst` (Mountain Time)
-- All others: `event_date` or `date` (UTC)
 
 ## Workflow
 
@@ -69,7 +68,7 @@ Different channels have different incrementality adjustments:
 | PSocial - FB Veterans/Brand | - | 0.70 |
 | PSocial - FB Retargeting | - | 0.55 |
 
-### Product Verticals (Clickstream)
+### Product Verticals (Clickstream) - Field name: product_vertical
 ```
 for_sale       → Buy intent pages
 for_rent       → Rental pages  
@@ -79,7 +78,7 @@ sub_finance    → Mortgage/finance pages
 realtorpage    → Agent pages
 ```
 
-### Lead Verticals (Conversions)
+### Lead Verticals (Conversions) - Field name: target_vertical
 ```
 for_sale → Buy leads
 for_rent → Rental leads
@@ -101,12 +100,6 @@ Total EFR is calculated from multiple revenue sources:
 | `sales_builder_revenue` | nc_sales_builder_revenue | New Construction |
 | `sell_realchoice_efr` | realchoice_revenue | UpNest sell |
 | `rent_efr` | rentals_revenue | Rental leads |
-
-### RPL Categories (Listing Price Tiers)
-```
-G: $0-$62K       E: $115K-$152.5K    C: $212.9K-$380K    A: $800K-$30M
-F: $62K-$115K    D: $152.5K-$212.9K  B: $380K-$800K      High: >$30M (excluded)
-```
 
 ## Common Query Patterns
 
