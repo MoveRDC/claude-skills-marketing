@@ -32,23 +32,10 @@ This skill gives Claude instant access to 80+ marketing terms, metrics, and conc
 
 ## Installation
 
-### Option 1: Using Skills Librarian (Recommended)
-If you have the skills-librarian skill installed:
-
-```
-Install the business-glossary skill from the shared repository
-```
-
-### Option 2: Manual Installation
 1. Download this `SKILL.md` file
 2. Create a directory in your skills folder: `~/.config/claude/skills/business-glossary/`
 3. Place `SKILL.md` in that directory
 4. Restart Claude Desktop
-
-### Option 3: Via Claude Projects
-1. Create a new Claude Project
-2. Add this `SKILL.md` file as project knowledge
-3. All conversations in that project will have access to the glossary
 
 ## Usage Examples
 
