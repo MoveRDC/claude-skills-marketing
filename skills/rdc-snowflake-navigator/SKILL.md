@@ -15,6 +15,7 @@ This skill provides comprehensive knowledge of RDC's Snowflake data warehouse, i
 |-------|----------|-------|-------------|
 | **clickstream_detail** | `RDC_ANALYTICS.CLICKSTREAM` | Event (hit) | User behavior, journeys, conversions |
 | **marketing_conversion_detail** | `RDC_ANALYTICS.REVENUE` | Lead | Lead attribution, EFR, delivery flags |
+| **spend** | `RDC_MARKETING.AGG_REPORTING` | Partner × Account × Day | Cross-channel spend consolidation, budget tracking |
 | **sem_summary** | `RDC_MARKETING.AGG_REPORTING` | Campaign × Day | SEM spend, leads, EFR |
 | **app_summary** | `RDC_MARKETING.AGG_REPORTING` | Campaign × Day | App install campaigns |
 | **psocial_summary** | `RDC_MARKETING.AGG_REPORTING` | Ad Set × Day | Facebook, Criteo spend |
@@ -36,11 +37,14 @@ When a query involves these tables:
    - User behavior → clickstream_detail
    - Lead/revenue metrics → marketing_conversion_detail
    - Campaign performance → sem_summary, app_summary, psocial_summary
+   - Cross-channel spend analysis → spend
 
 2. **Load relevant reference docs:**
    - Schema details → [references/snowflake_core_tables.md](references/snowflake_core_tables.md)
    - Business rules → [references/business_logic_reference.md](references/business_logic_reference.md)
    - Clickstream specifics → [references/clickstream_view_annotated.md](references/clickstream_view_annotated.md)
+   - EFR calculations → [references/marketing_conversion_detail_annotated.md](references/marketing_conversion_detail_annotated.md)
+   - Spend consolidation → [references/spend_view_annotated.md](references/spend_view_annotated.md)
 
 3. **Apply correct filters:**
    - Always filter on date first (these are large tables)
@@ -169,6 +173,23 @@ HAVING SUM(spend) > 100
 ORDER BY spend DESC;
 ```
 
+### Cross-Channel Spend Summary
+```sql
+SELECT 
+    channel,
+    partner,
+    target_vertical,
+    SUM(spend) AS spend,
+    SUM(impressions) AS impressions,
+    SUM(clicks) AS clicks
+FROM rdc_marketing.agg_reporting.spend
+WHERE event_date >= DATEADD('day', -30, CURRENT_DATE())
+  AND target_customer = 'b2c'
+GROUP BY 1, 2, 3
+HAVING SUM(spend) > 1000
+ORDER BY spend DESC;
+```
+
 ### User Journey to Lead
 ```sql
 WITH lead_sessions AS (
@@ -207,12 +228,25 @@ ORDER BY 1, 3 DESC;
 - **Snapshot**: Measured on event date (use for daily reporting)
 - **Cohort**: Attributed to install date (use for LTV analysis)
 
+### Spend Table Considerations
+- **Linear TV** (OceanMedia) has no impression/click data
+- **Recent TV data** (last 7 days) may use pacing instead of actuals
+- **TikTok spend** (`bytedanceglobal_int`) is zeroed after 2024-01-01
+- **App accounts** are excluded from platform aggregates (Google, Facebook, Bing, LinkedIn) to prevent double-counting
+
+### EFR Calculation Notes
+- **EFR is lagged 30 days** - Recent leads have no referral EFR (rolling avg uses days 30-36 back)
+- **High price tier ($30M+)** gets $0 referral EFR (intentional exclusion)
+- **NY excluded from Veterans United** per VU agreement
+- **Seller EFR capped at $25K** to prevent outlier skew
+
 ## Reference Documents
 
 - **[snowflake_core_tables.md](references/snowflake_core_tables.md)** - Complete schema documentation for all tables
 - **[business_logic_reference.md](references/business_logic_reference.md)** - Incrementality, attribution rules, metric definitions
 - **[clickstream_view_annotated.md](references/clickstream_view_annotated.md)** - Detailed clickstream field derivation logic
 - **[marketing_conversion_detail_annotated.md](references/marketing_conversion_detail_annotated.md)** - EFR calculation methodology and revenue sources
+- **[spend_view_annotated.md](references/spend_view_annotated.md)** - Unified spend aggregation across all marketing channels
 
 ## Tips for Effective Queries
 
