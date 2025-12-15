@@ -4,10 +4,10 @@ Claude AI skill packages for the RDC Marketing Analytics team. This repository c
 
 ## 📦 Available Skills
 
-### RDC Marketing Analytics v1.2
+### RDC Marketing Analytics v1.3
 Specialized knowledge for real estate marketing analytics, including SEM campaign optimization, lead generation analysis, and channel performance insights.
 
-**[Download Latest Version](dist/rdc-marketing-analytics-v1.1.skill)** ⬅️ Install this file in Claude
+**[Download Latest Version](dist/rdc-marketing-analytics-v1.3.skill)** ⬅️ Install this file in Claude
 
 **What it includes:**
 - Business context (two-sided marketplace model, platforms, external factors)
@@ -18,7 +18,7 @@ Specialized knowledge for real estate marketing analytics, including SEM campaig
 - Geographic market analysis frameworks
 - Common analysis patterns and best practices
 
-### Data Quality Validation v1.0 (New!)
+### Data Quality Validation v1.0
 Systematic data validation, error detection, cross-source reconciliation, and query correctness checking for analytical work.
 
 **[Download Latest Version](dist/data-quality-validation-v1.0.skill)** ⬅️ Install this file in Claude
@@ -34,16 +34,16 @@ Systematic data validation, error detection, cross-source reconciliation, and qu
 
 **Triggers:** "validate this query", "check for errors", "why don't these numbers match", "should I use median or mean", "why don't contributions sum to 100%", "reconcile these metrics", "verify data quality"
 
-### Skills Librarian (New!)
-A meta-skill that helps manage this skill repository. Use it to discover available skills, get installation instructions, create new skills, or update existing ones.
+### RDC Snowflake Navigator v1.1
+Comprehensive guide to RDC's Snowflake data warehouse for marketing and consumer analytics.
 
-**Triggers:** "what skills are available", "install a skill", "create new skill", "update skill"
+**[Download Latest Version](dist/rdc-snowflake-navigator-v1.1.skill)** ⬅️ Install this file in Claude
 
 **What it includes:**
-- Skill discovery and catalog
-- Installation instructions
-- Skill creation templates
-- Repository management via GitHub
+- Core table schemas (clickstream, marketing conversions, SEM, app, paid social)
+- Incrementality multipliers and IEFR calculations
+- Lead attribution logic and EFR components
+- Query patterns and best practices
 
 ## 🚀 Quick Start
 
@@ -140,15 +140,12 @@ We welcome contributions from the marketing analytics team! See **[CONTRIBUTING.
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-**Current Version: v1.2** (December 2025)
-- Added EFR (Expected Future Revenue) as North Star metric
-- Added ROAS, RPL, CPC, LSR metrics with formulas
-- Added business context (two-sided marketplace, platforms)
-- Added comprehensive glossary with all acronyms
-- Added external factors (seasonal, macro, competitive)
+**Current Version: v1.5** (December 2025)
+- Removed deprecated skills-librarian skill
+- Repository cleanup and maintenance
 
-**Previous: v1.1** (December 2024)
-- Initial release with core marketing analytics knowledge
+**Previous: v1.4** (December 2025)
+- Added data-quality-validation skill
 
 ## 👥 Team
 
@@ -175,12 +172,18 @@ claude-skills-marketing/
 │   │       ├── snowflake_schema.md    # Database schemas
 │   │       ├── business_logic.md      # Metrics and rules
 │   │       └── glossary.md            # Terms and acronyms
-│   └── skills-librarian/              # Meta-skill for repo management
-│       ├── SKILL.md                   # Librarian skill
-│       └── references/                # Templates and repo map
+│   ├── rdc-snowflake-navigator/       # Snowflake navigation
+│   │   ├── SKILL.md                   # Navigator skill
+│   │   └── references/                # Schema references
+│   ├── business-glossary/             # Business terminology
+│   │   └── SKILL.md                   # Glossary skill
+│   ├── seller-analytics/              # Seller vertical analytics
+│   │   └── SKILL.md                   # Seller skill
+│   └── taxonomy-updater/              # Campaign taxonomy
+│       └── SKILL.md                   # Taxonomy skill
 ├── dist/                              # Compiled .skill files (install these)
 │   ├── data-quality-validation-v1.0.skill
-│   └── rdc-marketing-analytics-v1.1.skill
+│   └── rdc-marketing-analytics-v1.3.skill
 ├── docs/                              # Team documentation
 │   ├── installation-guide.md          # Skill installation
 │   ├── mcp-setup-guide.md             # Complete MCP setup
