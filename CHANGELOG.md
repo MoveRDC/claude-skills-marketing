@@ -4,6 +4,19 @@ All notable changes to the Marketing Analytics Claude Skills will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v1.5] - 2025-12-15
+
+### Removed
+
+**Deprecated: skills-librarian**
+- Removed skills-librarian skill from repository
+- Functionality has been replaced by native Claude memory and past chats features
+- Users should use Claude's built-in conversation search for skill discovery
+
+### Maintenance
+- Repository cleanup and dist file reorganization
+- Updated documentation to remove librarian references
+
 ## [v1.4] - 2025-12-04
 
 ### Added
@@ -25,19 +38,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Analysis always proceeds
 - Users decide whether to fix or continue
 - Supports informed decision-making without creating bottlenecks
-
-## [v1.3] - 2025-12-04
-
-### Added
-
-**New Skill: skills-librarian**
-- Meta-skill for managing the skill repository
-- Discover and catalog available skills
-- Provide installation instructions with minimal user input
-- Create new skills using templates
-- Update existing skill content via GitHub
-- Repository structure documentation
-- Skill creation templates and guidelines
 
 ## [v1.2] - 2025-12-03
 
@@ -97,7 +97,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| v1.5 | 2025-12-15 | Removed skills-librarian (deprecated), repository cleanup |
 | v1.4 | 2025-12-04 | Added data-quality-validation skill for systematic validation |
-| v1.3 | 2025-12-04 | Added skills-librarian meta-skill for repo management |
 | v1.2 | 2025-12-03 | Added EFR, ROAS, business context, glossary, platform definitions |
 | v1.1 | 2024-12-01 | Initial release with core analytics knowledge |
