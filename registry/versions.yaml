@@ -2,7 +2,7 @@
 # Tracks versions, changes, and deprecations in one place
 
 version: "1.0"
-lastUpdated: "2025-12-05"
+lastUpdated: "2025-12-15"
 
 skills:
   rdc-marketing-analytics:
@@ -46,6 +46,45 @@ skills:
           - Initial release with core validation patterns
         breaking: false
 
+  rdc-snowflake-navigator:
+    current: "1.1.0"
+    released: "2025-11-20"
+    status: active
+    changelog:
+      - version: "1.1.0"
+        date: "2025-11-20"
+        changes:
+          - Added incrementality multiplier documentation
+          - Enhanced EFR component breakdown
+        breaking: false
+      - version: "1.0.0"
+        date: "2025-10-15"
+        changes:
+          - Initial release
+        breaking: false
+
+  business-glossary:
+    current: "1.0.0"
+    released: "2025-12-01"
+    status: active
+    changelog:
+      - version: "1.0.0"
+        date: "2025-12-01"
+        changes:
+          - Initial release with comprehensive terminology
+        breaking: false
+
+  seller-analytics:
+    current: "1.0.0"
+    released: "2025-12-01"
+    status: active
+    changelog:
+      - version: "1.0.0"
+        date: "2025-12-01"
+        changes:
+          - Initial release for seller vertical
+        breaking: false
+
   taxonomy-updater:
     current: "1.0.0"
     released: "2025-11-15"
@@ -57,27 +96,12 @@ skills:
           - Initial release
         breaking: false
 
-  skills-librarian:
-    current: "2.0.0"
-    released: "2025-12-05"
-    status: active
-    changelog:
-      - version: "2.0.0"
-        date: "2025-12-05"
-        changes:
-          - Added skill relationship mapping
-          - Added knowledge source discovery
-          - Added version tracking
-          - Reorganized as toolkit orchestrator
-        breaking: false
-      - version: "1.0.0"
-        date: "2025-12-01"
-        changes:
-          - Initial release with basic CRUD operations
-        breaking: false
-
-# Deprecation notices (none currently)
-deprecations: []
+# Deprecation notices
+deprecations:
+  - skill: skills-librarian
+    deprecated: "2025-12-15"
+    reason: "Functionality replaced by native Claude memory and past chats features"
+    migration: "Use Claude's built-in conversation search for skill discovery"
 
 # Upcoming planned releases
 roadmap:

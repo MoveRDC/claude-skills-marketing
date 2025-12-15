@@ -2,7 +2,7 @@
 # Maps how skills connect, complement, and depend on each other
 
 version: "1.0"
-lastUpdated: "2025-12-05"
+lastUpdated: "2025-12-15"
 
 skills:
   rdc-marketing-analytics:
@@ -26,6 +26,34 @@ skills:
       - null-detection
       - type-verification
 
+  rdc-snowflake-navigator:
+    category: analytics
+    layer: infrastructure
+    description: Snowflake database navigation and schema reference
+    capabilities:
+      - schema-reference
+      - query-patterns
+      - incrementality-logic
+      - efr-calculation
+
+  business-glossary:
+    category: reference
+    layer: domain
+    description: Business terminology and metric definitions
+    capabilities:
+      - terminology-lookup
+      - metric-definitions
+      - acronym-expansion
+
+  seller-analytics:
+    category: analytics
+    layer: domain
+    description: Seller vertical specific analytics
+    capabilities:
+      - seller-leads
+      - gq-lq-analysis
+      - seller-efr
+
   taxonomy-updater:
     category: content
     layer: utility
@@ -34,17 +62,6 @@ skills:
       - taxonomy-management
       - content-classification
       - category-updates
-
-  skills-librarian:
-    category: meta
-    layer: orchestration
-    description: Manages the skill toolkit itself
-    capabilities:
-      - skill-discovery
-      - skill-installation
-      - relationship-mapping
-      - knowledge-discovery
-      - version-tracking
 
 relationships:
   # Complementary: Often used together
@@ -58,11 +75,20 @@ relationships:
     target: rdc-marketing-analytics
     reason: Align campaign taxonomy with analytics dimensions
 
-  # The librarian orchestrates all skills
-  - type: orchestrates
-    source: skills-librarian
-    target: all
-    reason: Manages discovery, installation, and relationships for all skills
+  - type: complements
+    source: rdc-snowflake-navigator
+    target: rdc-marketing-analytics
+    reason: Navigator provides schema reference for analytics queries
+
+  - type: complements
+    source: business-glossary
+    target: rdc-marketing-analytics
+    reason: Glossary provides terminology context for analytics work
+
+  - type: complements
+    source: seller-analytics
+    target: rdc-marketing-analytics
+    reason: Seller analytics extends core analytics for seller vertical
 
 bundles:
   marketing-data-pipeline:
@@ -80,3 +106,13 @@ bundles:
       - rdc-marketing-analytics
     workflow: "Update taxonomy → Analyze performance by new categories"
     use_when: "Reorganizing content categories or campaign structures"
+
+  full-stack-analytics:
+    description: Complete analytics suite with all supporting tools
+    skills:
+      - rdc-snowflake-navigator
+      - business-glossary
+      - data-quality-validation
+      - rdc-marketing-analytics
+    workflow: "Reference schema → Validate data → Run analysis"
+    use_when: "Complex analysis requiring full context"
