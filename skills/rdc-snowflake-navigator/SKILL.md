@@ -45,6 +45,7 @@ When a query involves these tables:
    - Clickstream specifics → [references/clickstream_view_annotated.md](references/clickstream_view_annotated.md)
    - EFR calculations → [references/marketing_conversion_detail_annotated.md](references/marketing_conversion_detail_annotated.md)
    - Spend consolidation → [references/spend_view_annotated.md](references/spend_view_annotated.md)
+   - Lead/property/delivery paths → [references/lead_property_delivery_paths.md](references/lead_property_delivery_paths.md)
 
 3. **Apply correct filters:**
    - Always filter on date first (these are large tables)
@@ -104,6 +105,29 @@ Total EFR is calculated from multiple revenue sources:
 | `sales_builder_revenue` | nc_sales_builder_revenue | New Construction |
 | `sell_realchoice_efr` | realchoice_revenue | UpNest sell |
 | `rent_efr` | rentals_revenue | Rental leads |
+
+### Delivery Type Hierarchy
+When classifying leads by client delivery product, use this mutually exclusive priority:
+
+```sql
+CASE 
+    WHEN delivered_to_connections_plus_flag = 1 THEN 'Connections Plus'
+    WHEN delivered_to_mvip_flag = 1 OR delivered_to_mvip_package_flag = 1 THEN 'MVIP'
+    WHEN delivered_to_readyconnect_concierge_flag = 1 THEN 'RCC (Non-MVIP)'
+    ELSE 'No Premium Delivery'
+END as delivery_type
+```
+
+**Source:** wbs2512_pcv_optimization test definition
+
+### Listing Type Classification
+For property type segmentation, key low-value categories:
+```
+land           → Vacant land/lots (RPL ~$42)
+farms/ranches  → Farm properties (RPL ~$40)
+mobile home    → Mobile/manufactured (RPL ~$35)
+```
+Use: `LOWER(listing_type) IN ('land', 'farms/ranches')` for lot/land analysis.
 
 ## Common Query Patterns
 
@@ -214,6 +238,15 @@ ORDER BY 1, 3 DESC;
 
 ## Data Caveats
 
+### RCC Market Mapping Coverage
+The zip-to-RCC-market mapping only covers ~39% of leads. Join path:
+```
+postal_code → lead_zone_zipcode.zipcode → lead_zone.zone_id → market.id
+```
+**Tables:** `fivetran_referral.pg_public.{lead_zone_zipcode, lead_zone, market}`
+
+**Recommendation:** Use `state` or `dma_description` fields from marketing_conversion_detail for complete geographic coverage (99.9%). Reserve RCC market mapping for RCC-specific inventory analysis only.
+
 ### Historical Data Considerations
 - **SEM tracking codes** changed multiple times (pre-Oct 2021, Oct-Jan 2022 issues, Jan 2022+)
 - **App data** before June 2021 comes from separate historical table
@@ -247,6 +280,7 @@ ORDER BY 1, 3 DESC;
 - **[clickstream_view_annotated.md](references/clickstream_view_annotated.md)** - Detailed clickstream field derivation logic
 - **[marketing_conversion_detail_annotated.md](references/marketing_conversion_detail_annotated.md)** - EFR calculation methodology and revenue sources
 - **[spend_view_annotated.md](references/spend_view_annotated.md)** - Unified spend aggregation across all marketing channels
+- **[lead_property_delivery_paths.md](references/lead_property_delivery_paths.md)** - Lead to property type, client delivery, and geographic market mapping paths
 
 ## Tips for Effective Queries
 
