@@ -12,9 +12,10 @@ This document defines the established data paths for connecting leads to propert
 The marketing_conversion_detail table contains lead-level data with property attributes and delivery flags. This document defines the standard join paths and field mappings for:
 
 1. **Lead → Property Type** (listing classification)
-2. **Lead → Client Delivery** (where leads are routed)
+2. **Lead → Client Delivery Flags** (where leads are routed - flag-based)
 3. **Lead → Geographic Market** (RCC market mapping)
 4. **Price Bucket Segmentation** (standardized price tiers)
+5. **Lead → Client Fulfillment** (SFDC asset-level allocation tracking)
 
 ---
 
@@ -66,7 +67,7 @@ LOWER(listing_type) IN ('land', 'farms/ranches', 'mobile home')
 
 ---
 
-## 2. Lead to Client Delivery
+## 2. Lead to Client Delivery Flags
 
 ### Delivery Type Hierarchy
 
@@ -96,6 +97,9 @@ Priority 4: No Premium Delivery
 | `delivered_to_upnest_flag` | BOOLEAN | UpNest |
 | `delivered_to_rental_flag` | BOOLEAN | Rentals |
 | `delivered_to_new_construction_sales_builder_flag` | BOOLEAN | NC Sales Builder |
+| `delivered_to_basic_free_flag` | BOOLEAN | Basic Free |
+| `delivered_to_local_expert_flag` | BOOLEAN | Local Expert |
+| `delivered_to_market_reach_flag` | BOOLEAN | Market Reach |
 
 ### Standard Delivery Type Classification
 
@@ -221,7 +225,186 @@ ORDER BY
 
 ---
 
-## 5. Combined Analysis Patterns
+## 5. Lead to Client Fulfillment (SFDC Assets)
+
+This section documents the join path from consumer leads to specific client fulfillment allocations via Salesforce asset records. Use this when analyzing how marketing-driven leads are delivered to specific clients/accounts.
+
+### Conceptual Model
+
+```
+Consumer Lead (submitted_lead_id)
+    ↓
+Lead Inquiry (rdc_inquiry_guid)
+    ↓
+Lead Inquiry Allocation (parent_asset_id, fulfill_to_asset_id, allocation_type)
+    ↓
+SFDC Asset (Parent → Fulfill To hierarchy)
+    ↓
+SFDC Account (Client/Agent)
+```
+
+### Source Tables
+
+| Table | Location | Purpose |
+|-------|----------|---------|
+| lead_inquiry | `fivetran_referral.pg_public.lead_inquiry` | Lead-level detail with `rdc_inquiry_guid` |
+| lead_inquiry_allocation | `fivetran_referral.pg_public.lead_inquiry_allocation` | Lead-to-asset allocation records |
+| dim_asset_current | `rdc_entsys.sfdc.dim_asset_current` | SFDC asset definitions (contracts) |
+| dim_account_current | `rdc_entsys.account.dim_account_current` | Client/account information |
+
+### Key Join Fields
+
+| Field | Table | Description |
+|-------|-------|-------------|
+| `rdc_inquiry_guid` | lead_inquiry | Links to `submitted_lead_id` in lead tables |
+| `lead_inquiry_id` | lead_inquiry_allocation | FK to lead_inquiry.id |
+| `parent_asset_id` | lead_inquiry_allocation | Market-level contract asset |
+| `fulfill_to_asset_id` | lead_inquiry_allocation | Zip-level fulfillment asset |
+| `allocation_type` | lead_inquiry_allocation | `paid` or `followup` |
+
+### Asset Hierarchy
+
+SFDC assets follow a Parent → Fulfill To hierarchy:
+
+| Asset Type | Description | Example |
+|------------|-------------|---------|
+| **Parent** | Market-level contract | "MVIP Unity DENVER#1" |
+| **Fulfill To** | Zip-code level allocation | "MVIP Unity DENVER#1-80202" |
+
+### Key Asset Fields
+
+| Field | Description |
+|-------|-------------|
+| `id` | Asset ID (links to allocation tables) |
+| `parent_asset` | Parent asset ID for Fulfill To assets |
+| `accountid` | SFDC Account ID (client) |
+| `product2id` | Product identifier |
+| `status` | Active, In Active, Expired |
+| `market` | Zip code (for Fulfill To assets) |
+| `sov` | Share of Voice (%) |
+| `min_fuls` / `max_fuls` | Fulfillment bounds |
+| `annual_contract_value` | Contract value |
+| `start_date` / `end_date` | Contract period |
+
+### Allocation Types
+
+| Type | Description | EFR Treatment |
+|------|-------------|---------------|
+| `paid` | Monetized lead delivery | Custom hybrid EFR calculation |
+| `followup` | Non-monetized follow-up | Standard EFR |
+
+### Major Products by Asset Volume
+
+| Product ID | Product Name | Active Assets |
+|------------|--------------|---------------|
+| `01t3a000004dsNMAAY` | RCC Concierge | ~72,000 |
+| `01tj0000000XyWGAA0` | Connections Plus | ~64,000 |
+| `01tj0000003mtmMAAQ` | Realsuite Respond | ~20,000 |
+| `01tf1000004YS33AAG` | Realsuite Connect | ~20,000 |
+| `01t5f000006sGgOAAU` | MVIP Unity | ~2,500 |
+
+### Standard Join Pattern: Lead to Client
+
+```sql
+WITH client_assets AS (
+    SELECT
+        a.parent_asset,
+        a.id as fulfill_asset_id,
+        a.name as asset_name,
+        a.accountid,
+        ac.name as account_name,
+        a.status,
+        a.market as zip,
+        a.sov::int as share_of_voice,
+        a.min_fuls::int as min_fulfillments,
+        a.max_fuls::int as max_fulfillments,
+        a.start_date::date as start_date,
+        a.end_date::date as end_date
+    FROM rdc_entsys.sfdc.dim_asset_current a
+    LEFT JOIN rdc_entsys.account.dim_account_current ac ON a.accountid = ac.id
+    WHERE a.isdeleted != true
+      AND a.asset_type = 'Fulfill To'
+      AND a.status = 'Active'
+      -- Filter by product if needed:
+      -- AND a.product2id = '01t5f000006sGgOAAU'  -- MVIP Unity
+),
+
+lead_allocations AS (
+    SELECT DISTINCT
+        li.rdc_inquiry_guid as submitted_lead_id,
+        lia.parent_asset_id,
+        lia.fulfill_to_asset_id,
+        lia.allocation_type,
+        lia.created_at as allocation_date
+    FROM fivetran_referral.pg_public.lead_inquiry_allocation lia
+    JOIN fivetran_referral.pg_public.lead_inquiry li ON li.id = lia.lead_inquiry_id
+    WHERE lia.deleted_at IS NULL
+      -- Filter by specific parent assets if needed:
+      -- AND lia.parent_asset_id IN ('02iKa000005MyGmIAK', ...)
+)
+
+SELECT 
+    lead.submitted_lead_id,
+    lead.lead_submitted_date,
+    lead.property_postal_code,
+    alloc.allocation_type,
+    alloc.parent_asset_id,
+    ca.account_name as client_name,
+    ca.asset_name,
+    CASE 
+        WHEN ca.zip IS NOT NULL THEN 'HIT'
+        ELSE 'MISS'
+    END as on_target
+FROM rdc_analytics.leads.submitted_lead_detail lead
+LEFT JOIN lead_allocations alloc ON lead.submitted_lead_id = alloc.submitted_lead_id
+LEFT JOIN client_assets ca ON lead.property_postal_code = ca.zip
+WHERE lead.lead_submitted_date >= DATEADD('day', -90, CURRENT_DATE())
+  AND lead.lead_vertical LIKE '%for_sale%'
+```
+
+### On-Target Logic
+
+A lead is "on-target" for a client when:
+1. The client has an active Fulfill To asset for the lead's postal code
+2. (Optional) The lead's listing price meets minimum thresholds
+
+```sql
+CASE 
+    WHEN client_asset.zip IS NOT NULL 
+         AND lead.list_price_current >= 150000 
+    THEN 'HIT' 
+    ELSE 'MISS' 
+END as on_target
+```
+
+### Hybrid MVIP EFR Calculation
+
+For MVIP Hybrid products with `allocation_type = 'paid'`, use a custom EFR formula:
+
+```sql
+-- Hybrid EFR = Subscription Contribution + Variable Value
+-- Variable Value = avg_home_value * 0.007 * 0.0275 * 0.22
+
+CASE 
+    WHEN allocation_type = 'paid' THEN 106  -- Fixed hybrid rate
+    ELSE estimated_future_revenue           -- Standard EFR
+END as effective_efr
+```
+
+**Alternative detailed calculation:**
+```sql
+80 + ROUND(AVG(list_price_current) * 0.007 * 0.0275 * 0.22, 2) as hybrid_est_value
+```
+
+Where:
+- `80` = Subscription contribution
+- `0.007` = Commission rate estimate
+- `0.0275` = Referral fee rate
+- `0.22` = Conversion/close rate estimate
+
+---
+
+## 6. Combined Analysis Patterns
 
 ### Lowest-Value Segment Identification
 
@@ -277,9 +460,52 @@ ORDER BY
     END;
 ```
 
+### Marketing Channel to Client Fulfillment Analysis
+
+To analyze how specific marketing campaigns drive leads to specific clients:
+
+```sql
+WITH lead_data AS (
+    SELECT 
+        lead.submitted_lead_id,
+        lead.lead_submitted_date,
+        lead.property_postal_code,
+        lead.last_touch_marketing_channel,
+        lead.last_touch_marketing_channel_detail,
+        rev.estimated_future_revenue,
+        rev.list_price_current
+    FROM rdc_analytics.leads.submitted_lead_detail lead
+    LEFT JOIN rdc_analytics.revenue.marketing_conversion_detail_v2 rev 
+        ON lead.submitted_lead_id = rev.submitted_lead_id
+    WHERE lead.lead_submitted_date >= DATEADD('day', -90, CURRENT_DATE())
+      AND lead.lead_vertical LIKE '%for_sale%'
+),
+
+allocations AS (
+    SELECT DISTINCT
+        li.rdc_inquiry_guid as submitted_lead_id,
+        lia.parent_asset_id,
+        lia.allocation_type
+    FROM fivetran_referral.pg_public.lead_inquiry_allocation lia
+    JOIN fivetran_referral.pg_public.lead_inquiry li ON li.id = lia.lead_inquiry_id
+    WHERE lia.deleted_at IS NULL
+)
+
+SELECT 
+    ld.last_touch_marketing_channel,
+    a.allocation_type,
+    COUNT(DISTINCT ld.submitted_lead_id) as lead_count,
+    ROUND(SUM(ld.estimated_future_revenue), 2) as total_efr,
+    ROUND(AVG(ld.estimated_future_revenue), 2) as avg_efr
+FROM lead_data ld
+LEFT JOIN allocations a ON ld.submitted_lead_id = a.submitted_lead_id
+GROUP BY 1, 2
+ORDER BY 1, 2;
+```
+
 ---
 
-## 6. Data Quality Notes
+## 7. Data Quality Notes
 
 ### Aggregation Grain
 
@@ -295,9 +521,30 @@ WHERE event_date >= DATEADD('day', -180, CURRENT_DATE());
 -- Result: Records = Unique Leads (1:1 ratio)
 ```
 
+### Lead Allocation Coverage
+
+Not all leads have allocation records. The lead_inquiry_allocation table only contains leads that were routed through the allocation system.
+
+```sql
+-- Check allocation coverage
+SELECT 
+    COUNT(DISTINCT lead.submitted_lead_id) as total_leads,
+    COUNT(DISTINCT alloc.submitted_lead_id) as allocated_leads,
+    ROUND(100.0 * COUNT(DISTINCT alloc.submitted_lead_id) / 
+          NULLIF(COUNT(DISTINCT lead.submitted_lead_id), 0), 2) as coverage_pct
+FROM rdc_analytics.leads.submitted_lead_detail lead
+LEFT JOIN (
+    SELECT DISTINCT li.rdc_inquiry_guid as submitted_lead_id
+    FROM fivetran_referral.pg_public.lead_inquiry_allocation lia
+    JOIN fivetran_referral.pg_public.lead_inquiry li ON li.id = lia.lead_inquiry_id
+    WHERE lia.deleted_at IS NULL
+) alloc ON lead.submitted_lead_id = alloc.submitted_lead_id
+WHERE lead.lead_submitted_date >= DATEADD('day', -30, CURRENT_DATE());
+```
+
 ---
 
-## 7. Related Documentation
+## 8. Related Documentation
 
 - **[marketing_conversion_detail_annotated.md](marketing_conversion_detail_annotated.md)** - Full schema and EFR calculation methodology
 - **[business_logic_reference.md](business_logic_reference.md)** - Incrementality and attribution rules
