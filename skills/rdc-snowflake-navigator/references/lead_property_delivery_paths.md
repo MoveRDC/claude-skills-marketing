@@ -288,10 +288,10 @@ SFDC assets follow a Parent → Fulfill To hierarchy:
 
 ### Allocation Types
 
-| Type | Description | EFR Treatment |
-|------|-------------|---------------|
-| `paid` | Monetized lead delivery | Custom hybrid EFR calculation |
-| `followup` | Non-monetized follow-up | Standard EFR |
+| Type | Description |
+|------|-------------|
+| `paid` | Monetized lead delivery |
+| `followup` | Non-monetized follow-up |
 
 ### Major Products by Asset Volume
 
@@ -350,57 +350,13 @@ SELECT
     alloc.allocation_type,
     alloc.parent_asset_id,
     ca.account_name as client_name,
-    ca.asset_name,
-    CASE 
-        WHEN ca.zip IS NOT NULL THEN 'HIT'
-        ELSE 'MISS'
-    END as on_target
+    ca.asset_name
 FROM rdc_analytics.leads.submitted_lead_detail lead
 LEFT JOIN lead_allocations alloc ON lead.submitted_lead_id = alloc.submitted_lead_id
 LEFT JOIN client_assets ca ON lead.property_postal_code = ca.zip
 WHERE lead.lead_submitted_date >= DATEADD('day', -90, CURRENT_DATE())
   AND lead.lead_vertical LIKE '%for_sale%'
 ```
-
-### On-Target Logic
-
-A lead is "on-target" for a client when:
-1. The client has an active Fulfill To asset for the lead's postal code
-2. (Optional) The lead's listing price meets minimum thresholds
-
-```sql
-CASE 
-    WHEN client_asset.zip IS NOT NULL 
-         AND lead.list_price_current >= 150000 
-    THEN 'HIT' 
-    ELSE 'MISS' 
-END as on_target
-```
-
-### Hybrid MVIP EFR Calculation
-
-For MVIP Hybrid products with `allocation_type = 'paid'`, use a custom EFR formula:
-
-```sql
--- Hybrid EFR = Subscription Contribution + Variable Value
--- Variable Value = avg_home_value * 0.007 * 0.0275 * 0.22
-
-CASE 
-    WHEN allocation_type = 'paid' THEN 106  -- Fixed hybrid rate
-    ELSE estimated_future_revenue           -- Standard EFR
-END as effective_efr
-```
-
-**Alternative detailed calculation:**
-```sql
-80 + ROUND(AVG(list_price_current) * 0.007 * 0.0275 * 0.22, 2) as hybrid_est_value
-```
-
-Where:
-- `80` = Subscription contribution
-- `0.007` = Commission rate estimate
-- `0.0275` = Referral fee rate
-- `0.22` = Conversion/close rate estimate
 
 ---
 
