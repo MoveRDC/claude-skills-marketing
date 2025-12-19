@@ -49,7 +49,7 @@ When a query involves these tables:
 
 3. **Apply correct filters:**
    - Always filter on date first (these are large tables)
-   - Use appropriate date field for each table
+   - Use the appropriate date field for each table
    - Apply business-specific exclusions as documented
 
 4. **Use proper metrics:**
