@@ -27,19 +27,6 @@ The `listing_type` field in marketing_conversion_detail identifies the property 
 **Field:** `listing_type`
 **Location:** `RDC_ANALYTICS.REVENUE.MARKETING_CONVERSION_DETAIL`
 
-#### Listing Type Values
-
-| listing_type | Description | Typical RPL | Notes |
-|--------------|-------------|-------------|-------|
-| `single family` | Single-family homes | $51.66 | Highest volume |
-| `condo` | Condominiums | ~$45 | |
-| `townhome` | Townhomes | ~$48 | |
-| `multi family` | Multi-family properties | ~$40 | |
-| `land` | Vacant land/lots | $41.94 | **Low value segment** |
-| `farms/ranches` | Farm and ranch properties | $39.60 | **Low value segment** |
-| `mobile home` | Mobile/manufactured homes | $34.76 | **Lowest value** |
-| `other` | Miscellaneous | Varies | |
-
 #### Land/Lot Lead Definition
 
 For analysis of low-value lot/land leads, use:
@@ -107,32 +94,6 @@ CASE
 END as delivery_type
 ```
 
-### Delivery Type Value Analysis (Land Leads)
-
-| Delivery Type | Land Leads | Land RPL | Key Insight |
-|---------------|------------|----------|-------------|
-| Connections Plus | 84,063 | $60.65 | 43.6% of land leads |
-| MVIP | 33,185 | $81.54 | **Highest RPL** |
-| RCC (Non-MVIP) | 67,785 | $6.09 | **Very low value** |
-| No Premium | 7,801 | $9.32 | Minimal volume |
-
-**Critical Finding:** RCC Non-MVIP land leads have dramatically lower RPL ($6.09) compared to MVIP ($81.54) - a 92% value gap.
-
----
-
-## 3. Lead to Geographic Market (RCC Markets)
-
-### Join Path: Postal Code → RCC Market
-
-To map leads to RCC market definitions, use this join path:
-
-```
-marketing_conversion_detail.postal_code
-    → lead_zone_zipcode.zipcode
-    → lead_zone.id (via zone_id)
-    → market.id (via market_id)
-```
-
 ### Source Tables
 
 | Table | Location | Purpose |
@@ -164,28 +125,6 @@ FROM rdc_analytics.revenue.marketing_conversion_detail mcd
 LEFT JOIN zip_market_map zmm ON mcd.postal_code = zmm.zipcode
 WHERE mcd.event_date >= DATEADD('day', -180, CURRENT_DATE())
 ```
-
-### Coverage Limitation
-
-**⚠️ Important:** The zip-to-market mapping only covers approximately **39%** of leads.
-
-| Mapping Status | Lead Count | Percentage |
-|---------------|------------|------------|
-| Mapped to RCC Market | 75,217 | 39.0% |
-| Not Mapped | 117,617 | 61.0% |
-
-**Recommendation:** Use State or DMA fields from marketing_conversion_detail for complete geographic coverage. RCC market mapping should only be used for RCC-specific inventory analysis.
-
-### Alternative Geographic Fields (Full Coverage)
-
-For complete geographic analysis, use these fields directly from marketing_conversion_detail:
-
-| Field | Coverage | Use Case |
-|-------|----------|----------|
-| `state` | 99.9% | State-level rollups |
-| `dma_description` | 99.9% | Media market analysis |
-| `postal_code` | 99.96% | Zip-level analysis |
-| `county` | 99.9% | County-level analysis |
 
 ---
 
@@ -243,8 +182,6 @@ ORDER BY
 | $750K-$1M | 1,301 | 0.7% | $74.27 |
 | $1M+ | 2,213 | 1.1% | $82.85 |
 
-**Key Finding:** 74.9% of land leads are under $100K listing price with the lowest RPL ($36.83).
-
 ---
 
 ## 5. Combined Analysis Patterns
@@ -281,26 +218,9 @@ GROUP BY 1, 2
 ORDER BY delivery_type, price_bucket;
 ```
 
-### Lowest-Value Segment Result
-
-**RCC Non-MVIP + Under $100K:**
-- Lead Count: 52,908
-- RPL: **$5.26** (lowest of all segments)
-- Represents 27% of all land leads
-
 ---
 
 ## 6. Data Quality Notes
-
-### Null Value Rates
-
-| Field | Null Rate | Impact |
-|-------|-----------|--------|
-| postal_code | 0.04% | Minimal |
-| listing_type | 0.05% | Minimal |
-| state | 0.09% | Minimal |
-| lead_listing_price | ~1% | Some leads have no price |
-| estimated_future_revenue | 0.00% | None |
 
 ### Aggregation Grain
 
@@ -325,9 +245,3 @@ WHERE event_date >= DATEADD('day', -180, CURRENT_DATE());
 - **[snowflake_core_tables.md](snowflake_core_tables.md)** - Complete table schema documentation
 
 ---
-
-## Changelog
-
-| Date | Change | Author |
-|------|--------|--------|
-| 2025-12-19 | Initial documentation from MOPS-928 analysis | Marketing Analytics |
