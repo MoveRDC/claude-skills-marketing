@@ -20,11 +20,21 @@ This skill provides comprehensive knowledge of RDC's Snowflake data warehouse, i
 | **app_summary** | `RDC_MARKETING.AGG_REPORTING` | Campaign × Day | App install campaigns |
 | **psocial_summary** | `RDC_MARKETING.AGG_REPORTING` | Ad Set × Day | Facebook, Criteo spend |
 
+### Client Fulfillment Tables
+
+| Table | Location | Primary Use |
+|-------|----------|-------------|
+| **lead_inquiry** | `FIVETRAN_REFERRAL.PG_PUBLIC` | Lead detail with `rdc_inquiry_guid` (links to `submitted_lead_id`) |
+| **lead_inquiry_allocation** | `FIVETRAN_REFERRAL.PG_PUBLIC` | Lead-to-asset allocation records (paid/followup) |
+| **dim_asset_current** | `RDC_ENTSYS.SFDC` | SFDC asset/contract definitions |
+| **dim_account_current** | `RDC_ENTSYS.ACCOUNT` | Client/account information |
+
 ### Key Identity Fields
 - **User ID**: `adjusted_uu_id` (canonical across tables)
 - **Visit ID**: `visit_id` (clickstream)
 - **Lead ID**: `submitted_lead_id` or `inquiry_lead_id`
 - **GCLID**: `google_click_id` (paid search attribution)
+- **Asset ID**: `parent_asset_id` or `fulfill_to_asset_id` (client fulfillment)
 
 ### Key Date Fields
 - Clickstream: `event_date_mst` (Mountain Time)
@@ -38,6 +48,7 @@ When a query involves these tables:
    - Lead/revenue metrics → marketing_conversion_detail
    - Campaign performance → sem_summary, app_summary, psocial_summary
    - Cross-channel spend analysis → spend
+   - Client fulfillment analysis → lead_inquiry_allocation + dim_asset_current
 
 2. **Load relevant reference docs:**
    - Schema details → [references/snowflake_core_tables.md](references/snowflake_core_tables.md)
@@ -45,7 +56,7 @@ When a query involves these tables:
    - Clickstream specifics → [references/clickstream_view_annotated.md](references/clickstream_view_annotated.md)
    - EFR calculations → [references/marketing_conversion_detail_annotated.md](references/marketing_conversion_detail_annotated.md)
    - Spend consolidation → [references/spend_view_annotated.md](references/spend_view_annotated.md)
-   - Lead/property/delivery paths → [references/lead_property_delivery_paths.md](references/lead_property_delivery_paths.md)
+   - Lead/property/delivery/fulfillment paths → [references/lead_property_delivery_paths.md](references/lead_property_delivery_paths.md)
 
 3. **Apply correct filters:**
    - Always filter on date first (these are large tables)
@@ -128,6 +139,20 @@ farms/ranches  → Farm properties (RPL ~$40)
 mobile home    → Mobile/manufactured (RPL ~$35)
 ```
 Use: `LOWER(listing_type) IN ('land', 'farms/ranches')` for lot/land analysis.
+
+### Lead to Client Fulfillment Join Path
+To connect leads to specific client fulfillment assets:
+
+```
+submitted_lead_id → lead_inquiry.rdc_inquiry_guid → lead_inquiry_allocation → dim_asset_current → dim_account_current
+```
+
+Key fields:
+- `allocation_type`: `paid` (monetized) or `followup` (non-monetized)
+- `parent_asset_id`: Market-level contract
+- `fulfill_to_asset_id`: Zip-level allocation
+
+See [references/lead_property_delivery_paths.md](references/lead_property_delivery_paths.md) Section 5 for full documentation.
 
 ## Common Query Patterns
 
@@ -236,6 +261,29 @@ GROUP BY 1, 2
 ORDER BY 1, 3 DESC;
 ```
 
+### Lead to Client Fulfillment
+```sql
+WITH lead_allocations AS (
+    SELECT DISTINCT
+        li.rdc_inquiry_guid as submitted_lead_id,
+        lia.parent_asset_id,
+        lia.allocation_type
+    FROM fivetran_referral.pg_public.lead_inquiry_allocation lia
+    JOIN fivetran_referral.pg_public.lead_inquiry li ON li.id = lia.lead_inquiry_id
+    WHERE lia.deleted_at IS NULL
+)
+SELECT 
+    mcd.last_touch_marketing_channel,
+    la.allocation_type,
+    COUNT(DISTINCT mcd.submitted_lead_id) as leads,
+    SUM(mcd.estimated_future_revenue) as efr
+FROM rdc_analytics.revenue.marketing_conversion_detail mcd
+LEFT JOIN lead_allocations la ON mcd.submitted_lead_id = la.submitted_lead_id
+WHERE mcd.event_date >= DATEADD('day', -30, CURRENT_DATE())
+GROUP BY 1, 2
+ORDER BY 3 DESC;
+```
+
 ## Data Caveats
 
 ### RCC Market Mapping Coverage
@@ -246,6 +294,9 @@ postal_code → lead_zone_zipcode.zipcode → lead_zone.zone_id → market.id
 **Tables:** `fivetran_referral.pg_public.{lead_zone_zipcode, lead_zone, market}`
 
 **Recommendation:** Use `state` or `dma_description` fields from marketing_conversion_detail for complete geographic coverage (99.9%). Reserve RCC market mapping for RCC-specific inventory analysis only.
+
+### Lead Allocation Coverage
+Not all leads have allocation records in `lead_inquiry_allocation`. The allocation tables only contain leads that were routed through the allocation system (primarily premium products like MVIP).
 
 ### Historical Data Considerations
 - **SEM tracking codes** changed multiple times (pre-Oct 2021, Oct-Jan 2022 issues, Jan 2022+)
@@ -280,7 +331,7 @@ postal_code → lead_zone_zipcode.zipcode → lead_zone.zone_id → market.id
 - **[clickstream_view_annotated.md](references/clickstream_view_annotated.md)** - Detailed clickstream field derivation logic
 - **[marketing_conversion_detail_annotated.md](references/marketing_conversion_detail_annotated.md)** - EFR calculation methodology and revenue sources
 - **[spend_view_annotated.md](references/spend_view_annotated.md)** - Unified spend aggregation across all marketing channels
-- **[lead_property_delivery_paths.md](references/lead_property_delivery_paths.md)** - Lead to property type, client delivery, and geographic market mapping paths
+- **[lead_property_delivery_paths.md](references/lead_property_delivery_paths.md)** - Lead to property type, client delivery, geographic market, and client fulfillment paths
 
 ## Tips for Effective Queries
 
@@ -291,3 +342,4 @@ postal_code → lead_zone_zipcode.zipcode → lead_zone.zone_id → market.id
 5. **Prefer MEDIAN over AVG** for price metrics (skewed distributions)
 6. **Use CTEs** for complex multi-step queries
 7. **Handle NULLs** with NULLIF when dividing
+8. **Use `rdc_inquiry_guid`** to join leads to allocation records
