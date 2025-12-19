@@ -27,12 +27,28 @@ The `listing_type` field in marketing_conversion_detail identifies the property 
 **Field:** `listing_type`
 **Location:** `RDC_ANALYTICS.REVENUE.MARKETING_CONVERSION_DETAIL`
 
-#### Land/Lot Lead Definition
+#### Low-Value Listing Types
 
-For analysis of low-value lot/land leads, use:
+For analysis of low-value leads by property type:
+
+| Listing Type | Description | Typical RPL |
+|-------------|-------------|-------------|
+| `land` | Vacant land/lots | ~$42 |
+| `farms/ranches` | Farm properties | ~$40 |
+| `mobile home` | Mobile/manufactured | ~$35 |
+
+#### Land/Lot Lead Filter
+
+For land-specific analysis (excludes mobile homes):
 
 ```sql
 LOWER(listing_type) IN ('land', 'farms/ranches')
+```
+
+For all low-value property types:
+
+```sql
+LOWER(listing_type) IN ('land', 'farms/ranches', 'mobile home')
 ```
 
 **Note:** Case-insensitive matching recommended as values may have mixed case.
@@ -94,6 +110,16 @@ CASE
 END as delivery_type
 ```
 
+---
+
+## 3. Lead to Geographic Market (RCC)
+
+### RCC Market Mapping
+
+The RCC market mapping connects leads to ReadyConnect Concierge market definitions via postal code.
+
+**Coverage:** ~39% of leads (use State/DMA for complete coverage)
+
 ### Source Tables
 
 | Table | Location | Purpose |
@@ -101,6 +127,12 @@ END as delivery_type
 | lead_zone_zipcode | `fivetran_referral.pg_public.lead_zone_zipcode` | Zip to zone mapping |
 | lead_zone | `fivetran_referral.pg_public.lead_zone` | Zone to market mapping |
 | market | `fivetran_referral.pg_public.market` | Market definitions |
+
+### Join Path
+
+```
+postal_code → lead_zone_zipcode.zipcode → lead_zone.zone_id → market.id
+```
 
 ### Standard Join Pattern
 
@@ -125,6 +157,8 @@ FROM rdc_analytics.revenue.marketing_conversion_detail mcd
 LEFT JOIN zip_market_map zmm ON mcd.postal_code = zmm.zipcode
 WHERE mcd.event_date >= DATEADD('day', -180, CURRENT_DATE())
 ```
+
+**Recommendation:** Use `state` or `dma_description` fields from marketing_conversion_detail for complete geographic coverage (99.9%). Reserve RCC market mapping for RCC-specific inventory analysis only.
 
 ---
 
@@ -171,6 +205,9 @@ ORDER BY
 
 ### Price Bucket Distribution (Land Leads)
 
+**Data as of:** December 2025 (180-day lookback)
+**Note:** Values are point-in-time and will shift with market conditions.
+
 | Price Bucket | Land Leads | % of Land | Land RPL |
 |-------------|------------|-----------|----------|
 | < $100K | 144,463 | **74.9%** | $36.83 |
@@ -202,7 +239,12 @@ SELECT
     CASE 
         WHEN lead_listing_price < 100000 THEN '< $100K'
         WHEN lead_listing_price >= 100000 AND lead_listing_price < 200000 THEN '$100K-$200K'
-        -- ... (full price bucket logic)
+        WHEN lead_listing_price >= 200000 AND lead_listing_price < 300000 THEN '$200K-$300K'
+        WHEN lead_listing_price >= 300000 AND lead_listing_price < 400000 THEN '$300K-$400K'
+        WHEN lead_listing_price >= 400000 AND lead_listing_price < 500000 THEN '$400K-$500K'
+        WHEN lead_listing_price >= 500000 AND lead_listing_price < 750000 THEN '$500K-$750K'
+        WHEN lead_listing_price >= 750000 AND lead_listing_price < 1000000 THEN '$750K-$1M'
+        WHEN lead_listing_price >= 1000000 THEN '$1M+'
         ELSE 'Unknown'
     END as price_bucket,
     
@@ -215,7 +257,24 @@ WHERE event_date >= DATEADD('day', -180, CURRENT_DATE())
   AND submitted_lead_vertical = 'for_sale'
   AND LOWER(listing_type) IN ('land', 'farms/ranches')
 GROUP BY 1, 2
-ORDER BY delivery_type, price_bucket;
+ORDER BY 
+    CASE delivery_type
+        WHEN 'Connections Plus' THEN 1
+        WHEN 'MVIP' THEN 2
+        WHEN 'RCC (Non-MVIP)' THEN 3
+        ELSE 4
+    END,
+    CASE price_bucket
+        WHEN '< $100K' THEN 1
+        WHEN '$100K-$200K' THEN 2
+        WHEN '$200K-$300K' THEN 3
+        WHEN '$300K-$400K' THEN 4
+        WHEN '$400K-$500K' THEN 5
+        WHEN '$500K-$750K' THEN 6
+        WHEN '$750K-$1M' THEN 7
+        WHEN '$1M+' THEN 8
+        ELSE 9
+    END;
 ```
 
 ---
