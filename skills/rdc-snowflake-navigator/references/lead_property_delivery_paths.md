@@ -69,20 +69,9 @@ LOWER(listing_type) IN ('land', 'farms/ranches', 'mobile home')
 
 ## 2. Lead to Client Delivery Flags
 
-### Delivery Type Hierarchy
-
-Leads are routed to various client products. When a lead qualifies for multiple products, use this priority hierarchy:
-
-```
-Priority 1: Connections Plus (highest value)
-Priority 2: MVIP (includes MVIP Package)
-Priority 3: RCC (Non-MVIP)
-Priority 4: No Premium Delivery
-```
-
-**Source:** wbs2512_pcv_optimization test definition
-
 ### Delivery Flag Fields
+
+The marketing_conversion_detail table contains boolean flags indicating which products/clients received each lead.
 
 | Field | Type | Product |
 |-------|------|---------|
@@ -101,18 +90,7 @@ Priority 4: No Premium Delivery
 | `delivered_to_local_expert_flag` | BOOLEAN | Local Expert |
 | `delivered_to_market_reach_flag` | BOOLEAN | Market Reach |
 
-### Standard Delivery Type Classification
-
-Use this CASE statement for mutually exclusive delivery type assignment:
-
-```sql
-CASE 
-    WHEN delivered_to_connections_plus_flag = 1 THEN 'Connections Plus'
-    WHEN delivered_to_mvip_flag = 1 OR delivered_to_mvip_package_flag = 1 THEN 'MVIP'
-    WHEN delivered_to_readyconnect_concierge_flag = 1 THEN 'RCC (Non-MVIP)'
-    ELSE 'No Premium Delivery'
-END as delivery_type
-```
+**Note:** A single lead can have multiple delivery flags set to true (delivered to multiple products).
 
 ---
 
@@ -185,8 +163,6 @@ CASE
     ELSE 'Unknown'
 END as price_bucket
 ```
-
-**Source:** wbs2512_pcv_optimization test definition
 
 ### Price Bucket Ordering
 
@@ -362,18 +338,13 @@ WHERE lead.lead_submitted_date >= DATEADD('day', -90, CURRENT_DATE())
 
 ## 6. Combined Analysis Patterns
 
-### Lowest-Value Segment Identification
+### Lead Segmentation by Price and Property Type
 
-To identify the lowest-value lead segments, combine delivery type and price bucket:
+To analyze lead segments by price bucket and property type:
 
 ```sql
 SELECT 
-    CASE 
-        WHEN delivered_to_connections_plus_flag = 1 THEN 'Connections Plus'
-        WHEN delivered_to_mvip_flag = 1 OR delivered_to_mvip_package_flag = 1 THEN 'MVIP'
-        WHEN delivered_to_readyconnect_concierge_flag = 1 THEN 'RCC (Non-MVIP)'
-        ELSE 'No Premium Delivery'
-    END as delivery_type,
+    listing_type,
     
     CASE 
         WHEN lead_listing_price < 100000 THEN '< $100K'
@@ -394,15 +365,9 @@ FROM rdc_analytics.revenue.marketing_conversion_detail
 WHERE event_date >= DATEADD('day', -180, CURRENT_DATE())
   AND last_touch_marketing_channel = 'paid search'
   AND submitted_lead_vertical = 'for_sale'
-  AND LOWER(listing_type) IN ('land', 'farms/ranches')
 GROUP BY 1, 2
 ORDER BY 
-    CASE delivery_type
-        WHEN 'Connections Plus' THEN 1
-        WHEN 'MVIP' THEN 2
-        WHEN 'RCC (Non-MVIP)' THEN 3
-        ELSE 4
-    END,
+    listing_type,
     CASE price_bucket
         WHEN '< $100K' THEN 1
         WHEN '$100K-$200K' THEN 2
