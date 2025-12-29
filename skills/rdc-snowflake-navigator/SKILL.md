@@ -134,9 +134,9 @@ END as delivery_type
 ### Listing Type Classification
 For property type segmentation, key low-value categories:
 ```
-land           → Vacant land/lots (RPL ~$42)
-farms/ranches  → Farm properties (RPL ~$40)
-mobile home    → Mobile/manufactured (RPL ~$35)
+land           → Vacant land/lots
+farms/ranches  → Farm properties
+mobile home    → Mobile/manufactured
 ```
 Use: `LOWER(listing_type) IN ('land', 'farms/ranches')` for lot/land analysis.
 
