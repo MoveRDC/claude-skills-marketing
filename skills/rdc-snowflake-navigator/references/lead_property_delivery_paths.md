@@ -32,11 +32,11 @@ The `listing_type` field in marketing_conversion_detail identifies the property 
 
 For analysis of low-value leads by property type:
 
-| Listing Type | Description | Typical RPL |
-|-------------|-------------|-------------|
-| `land` | Vacant land/lots | ~$42 |
-| `farms/ranches` | Farm properties | ~$40 |
-| `mobile home` | Mobile/manufactured | ~$35 |
+| Listing Type | Description |
+|-------------|-------------|
+| `land` | Vacant land/lots |
+| `farms/ranches` | Farm properties |
+| `mobile home` | Mobile/manufactured |
 
 #### Land/Lot Lead Filter
 
@@ -183,22 +183,6 @@ ORDER BY
     END
 ```
 
-### Price Bucket Distribution (Land Leads)
-
-**Data as of:** December 2025 (180-day lookback)
-**Note:** Values are point-in-time and will shift with market conditions.
-
-| Price Bucket | Land Leads | % of Land | Land RPL |
-|-------------|------------|-----------|----------|
-| < $100K | 144,463 | **74.9%** | $36.83 |
-| $100K-$200K | 27,446 | 14.2% | $54.19 |
-| $200K-$300K | 8,605 | 4.5% | $66.83 |
-| $300K-$400K | 4,034 | 2.1% | $67.73 |
-| $400K-$500K | 1,953 | 1.0% | $75.42 |
-| $500K-$750K | 2,451 | 1.3% | $76.37 |
-| $750K-$1M | 1,301 | 0.7% | $74.27 |
-| $1M+ | 2,213 | 1.1% | $82.85 |
-
 ---
 
 ## 5. Lead to Client Fulfillment (SFDC Assets)
@@ -269,15 +253,6 @@ SFDC assets follow a Parent → Fulfill To hierarchy:
 | `paid` | Monetized lead delivery |
 | `followup` | Non-monetized follow-up |
 
-### Major Products by Asset Volume
-
-| Product ID | Product Name | Active Assets |
-|------------|--------------|---------------|
-| `01t3a000004dsNMAAY` | RCC Concierge | ~72,000 |
-| `01tj0000000XyWGAA0` | Connections Plus | ~64,000 |
-| `01tj0000003mtmMAAQ` | Realsuite Respond | ~20,000 |
-| `01tf1000004YS33AAG` | Realsuite Connect | ~20,000 |
-| `01t5f000006sGgOAAU` | MVIP Unity | ~2,500 |
 
 ### Standard Join Pattern: Lead to Client
 
