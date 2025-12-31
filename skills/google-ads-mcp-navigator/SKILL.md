@@ -365,6 +365,7 @@ conditions: [
 ```
 
 ### Interpreting Results
+- **Treat Analysis as Relative to historical performance**: rather than relying on a hard threshold, develop an understanding of previous behavior vs. current behavior, and interpret the difference. When there is no previous behavior to compare, use the following rules.
 - **High overlap rate (>50%)**: Frequent direct competition
 - **Position above rate >50%**: Competitor usually beats you
 - **Outranking share**: Combines position wins + showing when they didn't
