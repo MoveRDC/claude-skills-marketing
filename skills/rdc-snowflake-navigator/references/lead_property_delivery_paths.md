@@ -152,35 +152,15 @@ Use this standardized price bucket classification for lead segmentation:
 
 ```sql
 CASE 
-    WHEN lead_listing_price < 100000 THEN '< $100K'
-    WHEN lead_listing_price >= 100000 AND lead_listing_price < 200000 THEN '$100K-$200K'
-    WHEN lead_listing_price >= 200000 AND lead_listing_price < 300000 THEN '$200K-$300K'
-    WHEN lead_listing_price >= 300000 AND lead_listing_price < 400000 THEN '$300K-$400K'
-    WHEN lead_listing_price >= 400000 AND lead_listing_price < 500000 THEN '$400K-$500K'
-    WHEN lead_listing_price >= 500000 AND lead_listing_price < 750000 THEN '$500K-$750K'
-    WHEN lead_listing_price >= 750000 AND lead_listing_price < 1000000 THEN '$750K-$1M'
+    WHEN lead_listing_price < 60000 THEN '< $60K'
+    WHEN lead_listing_price >= 60000 AND lead_listing_price < 100000 THEN '$60K-$100K'
+    WHEN lead_listing_price >= 100000 AND lead_listing_price < 150000 THEN '$100K-$150K'
+    WHEN lead_listing_price >= 150000 AND lead_listing_price < 300000 THEN '$150K-$300K'
+    WHEN lead_listing_price >= 300000 AND lead_listing_price < 500000 THEN '$300K-$500K'
+    WHEN lead_listing_price >= 500000 AND lead_listing_price < 1000000 THEN '$500K-$1M'
     WHEN lead_listing_price >= 1000000 THEN '$1M+'
     ELSE 'Unknown'
 END as price_bucket
-```
-
-### Price Bucket Ordering
-
-For proper sorting in reports, use this ORDER BY pattern:
-
-```sql
-ORDER BY 
-    CASE price_bucket
-        WHEN '< $100K' THEN 1
-        WHEN '$100K-$200K' THEN 2
-        WHEN '$200K-$300K' THEN 3
-        WHEN '$300K-$400K' THEN 4
-        WHEN '$400K-$500K' THEN 5
-        WHEN '$500K-$750K' THEN 6
-        WHEN '$750K-$1M' THEN 7
-        WHEN '$1M+' THEN 8
-        ELSE 9
-    END
 ```
 
 ---
@@ -322,13 +302,12 @@ SELECT
     listing_type,
     
     CASE 
-        WHEN lead_listing_price < 100000 THEN '< $100K'
-        WHEN lead_listing_price >= 100000 AND lead_listing_price < 200000 THEN '$100K-$200K'
-        WHEN lead_listing_price >= 200000 AND lead_listing_price < 300000 THEN '$200K-$300K'
-        WHEN lead_listing_price >= 300000 AND lead_listing_price < 400000 THEN '$300K-$400K'
-        WHEN lead_listing_price >= 400000 AND lead_listing_price < 500000 THEN '$400K-$500K'
-        WHEN lead_listing_price >= 500000 AND lead_listing_price < 750000 THEN '$500K-$750K'
-        WHEN lead_listing_price >= 750000 AND lead_listing_price < 1000000 THEN '$750K-$1M'
+        WHEN lead_listing_price < 60000 THEN '< $60K'
+        WHEN lead_listing_price >= 60000 AND lead_listing_price < 100000 THEN '$60K-$100K'
+        WHEN lead_listing_price >= 100000 AND lead_listing_price < 150000 THEN '$100K-$150K'
+        WHEN lead_listing_price >= 150000 AND lead_listing_price < 300000 THEN '$150K-$300K'
+        WHEN lead_listing_price >= 300000 AND lead_listing_price < 500000 THEN '$300K-$500K'
+        WHEN lead_listing_price >= 500000 AND lead_listing_price < 1000000 THEN '$500K-$1M'
         WHEN lead_listing_price >= 1000000 THEN '$1M+'
         ELSE 'Unknown'
     END as price_bucket,
@@ -341,21 +320,9 @@ WHERE event_date >= DATEADD('day', -180, CURRENT_DATE())
   AND last_touch_marketing_channel = 'paid search'
   AND submitted_lead_vertical = 'for_sale'
 GROUP BY 1, 2
-ORDER BY 
-    listing_type,
-    CASE price_bucket
-        WHEN '< $100K' THEN 1
-        WHEN '$100K-$200K' THEN 2
-        WHEN '$200K-$300K' THEN 3
-        WHEN '$300K-$400K' THEN 4
-        WHEN '$400K-$500K' THEN 5
-        WHEN '$500K-$750K' THEN 6
-        WHEN '$750K-$1M' THEN 7
-        WHEN '$1M+' THEN 8
-        ELSE 9
-    END;
+;
 ```
-
+d
 ### Marketing Channel to Client Fulfillment Analysis
 
 To analyze how specific marketing campaigns drive leads to specific clients:
