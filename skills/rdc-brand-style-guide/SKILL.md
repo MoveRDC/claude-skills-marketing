@@ -7,6 +7,23 @@ description: Realtor.com brand guidelines for creating branded reports, presenta
 
 Reference for creating on-brand reports, presentations, and visualizations.
 
+## Brand Assets
+
+### Included Logo Files
+This skill includes commonly used logo assets in the `assets/` folder:
+- `logo-primary.svg` - Full color logo (house icon + wordmark)
+- `icon-home.svg` - Standalone home icon for small sizes/favicons
+
+**Raw URLs for embedding:**
+```
+https://raw.githubusercontent.com/MoveRDC/claude-skills-marketing/main/skills/rdc-brand-style-guide/assets/logo-primary.svg
+https://raw.githubusercontent.com/MoveRDC/claude-skills-marketing/main/skills/rdc-brand-style-guide/assets/icon-home.svg
+```
+
+### Additional Brand Assets
+For additional logos, icons, photography, and brand resources:
+**Brand Asset Portal**: https://dam.gettyimages.com/realtor/brand-assets
+
 ## Primary Color Palette
 
 | Name | Hex | RGB | Usage |
@@ -70,9 +87,9 @@ Reference for creating on-brand reports, presentations, and visualizations.
 ## Logo Usage
 
 ### Versions
-- **Primary Logo**: House icon + wordmark (preferred)
+- **Primary Logo**: House icon + wordmark (preferred) → `assets/logo-primary.svg`
 - **Mini Logo**: Optimized for small sizes
-- **Home Icon Only**: Use when brand is well-established (app icon, email, mobile banners)
+- **Home Icon Only**: Use when brand is well-established → `assets/icon-home.svg`
 
 ### Rules
 - Minimum size: **150px width / 1.15 inches**
