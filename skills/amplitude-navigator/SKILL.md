@@ -19,7 +19,7 @@ This skill provides efficient navigation of the Amplitude MCP tools, reducing co
 | Project | App ID | Description | Use Case |
 |---------|--------|-------------|----------|
 | **Realtor - Production** | `558383` | Primary clickstream data | Main analytics, experiments |
-| **Realtor - Leads 2.0** | `678364` | Lead submission data | Lead analysis, attribution |
+| **Realtor - Leads 2.0** | `678364` | Lead submission data | Lead analysis, attribution, click attributed EFR |
 | **Consumer Marketing Data Braze** | `674963` | Braze notification events | Push/email engagement |
 | **Consumer Marketing Data Cordial** | `678109` | Cordial email events | Email performance |
 | **Real Time SDK - Prod** | `675822` | Browser SDK with Session Replay | Session replay, real-time |
