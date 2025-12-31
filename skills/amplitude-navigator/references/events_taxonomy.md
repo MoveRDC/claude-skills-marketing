@@ -15,7 +15,7 @@ RDC events use lowercase naming without spaces:
 ### Lead Events
 Lead events follow the pattern: `{vertical}{type}lead`
 - `cobrokelead` - Cobroke listing lead
-- `advantagelead` - Advantage listing lead
+- `advantagelead` - New Construction listing lead
 - `rentallead` - Rental property lead
 - `farlead` - Find a Realtor lead
 
@@ -67,7 +67,7 @@ More specific lead types:
 | Event | Display Name | Description |
 |-------|--------------|-------------|
 | `cobrokelead` | Submitted cobroke lead | Cobroke listing lead |
-| `advantagelead` | advantagelead | Advantage listing lead |
+| `advantagelead` | advantagelead | New Construction listing lead |
 | `forsaleagentconnection` | For Sale Agent Connection Lead | Agent connection product lead |
 | `forsalecobrokephonelead` | Submitted for sale cobroke phone lead | Phone lead on cobroke |
 | `forsalecobroketextlead` | Submitted for sale cobroke text lead | Text lead on cobroke |
