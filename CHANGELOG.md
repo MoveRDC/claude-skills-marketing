@@ -4,6 +4,28 @@ All notable changes to the Marketing Analytics Claude Skills will be documented 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [v1.6] - 2025-12-31
+
+### Added
+
+**New Skill: rdc-brand-style-guide**
+- Comprehensive brand guidelines for creating on-brand reports, presentations, dashboards, and visualizations
+- Primary color palette with official Realtor Red (#D92228) and Warm Grays
+- Secondary palette for internal communications (Orange, Teal, Blue, Purple variants)
+- Typography rules: Galano Grotesque (primary), Poppins (Google products), Helvetica (email)
+- Typesetting specifications (leading, spacing ratios)
+- Text style guidelines (sentence case, Oxford comma, punctuation rules)
+- Logo usage guidelines and restrictions
+- Chart/visualization color conventions matching team YoY pattern:
+  - Red for current year/primary series
+  - Black for prior year/comparison
+  - Light gray for variance bars
+  - Teal for target lines
+- CSS variables for quick implementation
+- Report structure templates (Executive Report, Data Dashboard, Presentation Slides)
+
+**Source:** Official Realtor.com Brand Guidelines (October 2025)
+
 ## [v1.5] - 2025-12-15
 
 ### Removed
@@ -97,6 +119,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| v1.6 | 2025-12-31 | Added rdc-brand-style-guide skill for branded outputs |
 | v1.5 | 2025-12-15 | Removed skills-librarian (deprecated), repository cleanup |
 | v1.4 | 2025-12-04 | Added data-quality-validation skill for systematic validation |
 | v1.2 | 2025-12-03 | Added EFR, ROAS, business context, glossary, platform definitions |
